@@ -1,5 +1,3 @@
-"""TODO.md parser."""
-
 import re
 from pathlib import Path
 from .models import Task, TaskStatus, Board

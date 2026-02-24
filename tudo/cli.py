@@ -1,7 +1,6 @@
 """Command line interface for tudo."""
 
 import argparse
-import sys
 from pathlib import Path
 
 from .parser import parse_todo_file
