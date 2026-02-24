@@ -29,6 +29,53 @@ def parse_task_content(content: str) -> dict:
     return result
 
 
+def parse_front_matter(lines: list[str]) -> tuple[dict, int]:
+    """Parse YAML front matter from the beginning of file.
+    
+    Standard format:
+        ---
+        key: value
+        ---
+        # Title
+        content...
+    
+    Returns (settings_dict, line_index_to_continue_parsing)
+    """
+    settings = {}
+    
+    if len(lines) < 2:
+        return settings, 0
+    
+    # File must start with '---'
+    if lines[0].strip() != '---':
+        return settings, 0
+    
+    # Find closing '---'
+    end_idx = -1
+    for i in range(1, len(lines)):
+        if lines[i].strip() == '---':
+            end_idx = i
+            break
+    
+    if end_idx == -1:
+        return settings, 0
+    
+    # Parse settings content between --- markers
+    for i in range(1, end_idx):
+        line = lines[i].strip()
+        if not line or line.startswith('#'):
+            continue
+        
+        # Parse key: value format
+        if ':' in line:
+            key, value = line.split(':', 1)
+            key = key.strip()
+            value = value.strip()
+            settings[key] = value
+    
+    return settings, end_idx + 1
+
+
 def parse_todo_file(file_path: Path) -> Board:
     """Parse a TODO.md file and return a Board."""
     board = Board(title="TODO Board")
@@ -39,9 +86,13 @@ def parse_todo_file(file_path: Path) -> Board:
     with open(file_path, "r", encoding="utf-8") as f:
         lines = f.readlines()
 
+    # Parse front matter settings
+    settings, start_idx = parse_front_matter(lines)
+    board.settings = settings
+
     current_status = TaskStatus.TODO
 
-    for line_num, line in enumerate(lines, 1):
+    for line_num, line in enumerate(lines[start_idx:], start_idx + 1):
         stripped = line.strip()
 
         if not stripped:
@@ -103,7 +154,18 @@ def save_todo_file(file_path: Path, board: Board) -> None:
     blocked_tasks = board.get_tasks_by_status(TaskStatus.BLOCKED)
     done_tasks = board.get_tasks_by_status(TaskStatus.DONE)
 
-    lines = ["# TODO\n", "\n"]
+    lines = []
+    
+    # Write front matter settings at the beginning
+    if board.settings:
+        lines.append("---\n")
+        for key, value in board.settings.items():
+            lines.append(f"{key}: {value}\n")
+        lines.append("---\n")
+        lines.append("\n")
+    
+    lines.append("# TODO\n")
+    lines.append("\n")
 
     def format_task(task: Task) -> str:
         """Format a task as markdown."""

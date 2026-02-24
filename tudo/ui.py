@@ -21,7 +21,7 @@ class TaskCard(Static):
         border: solid $surface-lighten-1;
     }
     TaskCard:hover {
-        background: $surface-darken-1;
+        background: $surface-lighten-1;
     }
     TaskCard.selected {
         border: solid $accent;
@@ -109,9 +109,6 @@ class KanbanColumn(Vertical):
         height: 100%;
         padding: 0 1;
         overflow-y: auto;
-    }
-    KanbanColumn:focus-within {
-        background: $surface-darken-1;
     }
     """
 
@@ -345,9 +342,6 @@ class TudoApp(App):
     Screen {
         align: center middle;
     }
-    TudoApp {
-        background: $surface-darken-1;
-    }
     """
 
     BINDINGS = [
@@ -371,6 +365,7 @@ class TudoApp(App):
         Binding("shift+h", "move_task('left')", "Move Left", show=False),
         Binding("shift+l", "move_task('right')", "Move Right", show=False),
         Binding("?", "help", "Help"),
+        Binding("t", "change_theme", "Theme"),
     ]
 
     def __init__(self, board: Board, file_path, **kwargs):
@@ -378,6 +373,11 @@ class TudoApp(App):
         self.file_path = file_path
         self._kanban_board = None
         super().__init__(**kwargs)
+
+    def on_mount(self) -> None:
+        """Set theme on mount from settings or default."""
+        theme = self.board.settings.get("theme", "dracula")
+        self.theme = theme
 
     def compose(self) -> ComposeResult:
         # 直接显示看板，没有额外的标题栏
@@ -437,7 +437,30 @@ class TudoApp(App):
 ## Actions
 - r - Refresh from file
 - s - Save to file
+- t - Change theme
 - q - Quit
 - ? - Show this help
 """
         self.notify(help_text, title="Help", timeout=10)
+
+    def action_change_theme(self) -> None:
+        """Cycle through available themes."""
+        themes = ["dracula", "textual-dark", "nord", "monokai", "solarized-dark"]
+        current = self.board.settings.get("theme", "dracula")
+        
+        try:
+            idx = themes.index(current)
+        except ValueError:
+            idx = -1
+        
+        next_theme = themes[(idx + 1) % len(themes)]
+        self.board.settings["theme"] = next_theme
+        self.theme = next_theme
+        
+        # Auto-save settings
+        from .parser import save_todo_file
+        try:
+            save_todo_file(self.file_path, self.board)
+            self.notify(f"Theme changed to: {next_theme}")
+        except Exception as e:
+            self.notify(f"Theme changed but failed to save: {e}", severity="warning")

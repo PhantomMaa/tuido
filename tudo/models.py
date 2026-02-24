@@ -36,6 +36,7 @@ class Board:
 
     title: str = "TODO Board"
     tasks: list[Task] = field(default_factory=list)
+    settings: dict = field(default_factory=dict)
 
     def get_tasks_by_status(self, status: TaskStatus) -> list[Task]:
         """Get all tasks with the given status."""

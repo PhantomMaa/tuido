@@ -1,3 +1,7 @@
+---
+theme: dracula
+---
+
 # TODO
 
 ## Todo
@@ -13,12 +17,12 @@
 ## Blocked
 - Add search/filter functionality #feature !high
 - 飞书消息通道切换至机器人，卡片上提供回滚和标记成功的按钮。大模型切到豆包等方舟平台上提供的模型 #feature
+- 在变更开始时给用户发通知 !high
 
 ## Done
 - 观测异常和标记成功逻辑从 dsyncer 迁移至旁路观测 #feature !high
 - 增加回滚的日志，用于统计失败中回滚的占比 !high
 - decc 重构为每个接口合并调用大模型
-- 在变更开始时给用户发通知 !high
 - spacex 流程里增加前置状态过滤
 - 批量刷新多维表格里的任务状态
 - 制作迁移进展大盘
