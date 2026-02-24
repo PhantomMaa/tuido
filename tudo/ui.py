@@ -18,15 +18,14 @@ class TaskCard(Static):
         height: auto;
         padding: 0 1;
         margin: 0;
-        border: solid $primary-darken-2;
-        background: $surface-darken-1;
+        border: solid $surface-lighten-1;
     }
     TaskCard:hover {
-        background: $surface-lighten-1;
+        background: $surface-darken-1;
     }
     TaskCard.selected {
-        border: solid $success;
-        background: $surface-lighten-2;
+        border: solid $accent;
+        background: $surface;
     }
     """
 
@@ -53,10 +52,10 @@ class TaskCard(Static):
         meta_parts = []
         if self.task_obj.priority:
             priority_colors = {
-                "high": "red",
-                "critical": "red",
-                "medium": "yellow",
-                "low": "green",
+                "high": "dark_red",
+                "critical": "dark_red",
+                "medium": "dark_yellow",
+                "low": "dark_green",
             }
             color = priority_colors.get(self.task_obj.priority, "white")
             meta_parts.append(f"[{color} bold]!{self.task_obj.priority}[/{color} bold]")
@@ -92,6 +91,7 @@ class ColumnHeader(Static):
         content-align: center middle;
         text-style: bold;
         background: $primary-darken-3;
+        color: $text;
     }
     """
 
@@ -111,7 +111,7 @@ class KanbanColumn(Vertical):
         overflow-y: auto;
     }
     KanbanColumn:focus-within {
-        border: solid $primary;
+        background: $surface-darken-1;
     }
     """
 
