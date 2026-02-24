@@ -107,7 +107,6 @@ class KanbanColumn(Vertical):
     KanbanColumn {
         width: 1fr;
         height: 100%;
-        border: solid $primary-darken-2;
         padding: 0 1;
         overflow-y: auto;
     }
