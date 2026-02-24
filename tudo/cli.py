@@ -43,13 +43,13 @@ def main():
         action="store_true",
         help="Create a sample TODO.md if it doesn't exist",
     )
-    
+
     args = parser.parse_args()
-    
+
     # Resolve the path
     target_path = Path(args.path).resolve()
     todo_file = find_todo_file(target_path)
-    
+
     # Create sample file if requested and doesn't exist
     if args.create and not todo_file.exists():
         sample_content = """# TODO
@@ -71,10 +71,10 @@ def main():
 """
         todo_file.write_text(sample_content)
         print(f"Created sample TODO.md at {todo_file}")
-    
+
     # Parse the todo file
     board = parse_todo_file(todo_file)
-    
+
     # Launch the TUI app
     app = TudoApp(board, todo_file)
     app.run()
