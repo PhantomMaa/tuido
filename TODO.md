@@ -1,13 +1,13 @@
 # TODO
 
 ## Todo
-- Color themes #ui
 - Support for due dates #enhancement
 - Export to different formats (JSON, CSV) #feature
+- Implement task editing within TUI #feature !high
 
 ## In Progress
+- Color themes #ui
 - Integration with GitHub Issues  (waiting for API key) #integration
-- Implement task editing within TUI #feature !high
 
 ## Blocked
 - Add search/filter functionality #feature !high
