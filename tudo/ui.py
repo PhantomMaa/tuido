@@ -251,13 +251,16 @@ class KanbanBoard(Horizontal):
             # Refresh the entire board
             self.refresh_board()
             
-            # Find new index of the moved task
-            all_cards = self.get_all_task_cards()
-            for i, c in enumerate(all_cards):
-                if c.task_obj == card.task_obj:
-                    self.selected_task_index = i
-                    break
-            self.update_selection()
+            # Defer selection update until after DOM refresh
+            def update_selection_after_refresh():
+                all_cards = self.get_all_task_cards()
+                for i, c in enumerate(all_cards):
+                    if c.task_obj == card.task_obj:
+                        self.selected_task_index = i
+                        break
+                self.update_selection()
+            
+            self.call_after_refresh(update_selection_after_refresh)
     
     def navigate_tasks(self, direction: str) -> None:
         """Navigate between tasks."""
