@@ -1,5 +1,5 @@
 ---
-theme: dracula
+theme: textual-dark
 ---
 
 # TODO
@@ -9,22 +9,22 @@ theme: dracula
 - Export to different formats (JSON, CSV) #feature
 - Implement task editing within TUI #feature !high
 - 在变更开始时给用户发通知 !high
-- 飞书消息通道切换至机器人，卡片上提供回滚和标记成功的按钮。大模型切到豆包等方舟平台上提供的模型 #feature
 
 ## In Progress
 - Integration with GitHub Issues  (waiting for API key) #integration
 - Color themes #ui
 - 将迁移结果更新到飞书表格 #feature
-
-## Blocked
 - Add search/filter functionality #feature !high
+- 飞书消息通道切换至机器人，卡片上提供回滚和标记成功的按钮。大模型切到豆包等方舟平台上提供的模型 #feature
 
 ## Done
 - 观测异常和标记成功逻辑从 dsyncer 迁移至旁路观测 #feature !high
 - 增加回滚的日志，用于统计失败中回滚的占比 !high
-- decc 重构为每个接口合并调用大模型
 - spacex 流程里增加前置状态过滤
 - 批量刷新多维表格里的任务状态
+
+## Archived
+- decc 重构为每个接口合并调用大模型
 - 制作迁移进展大盘
 - 在飞书表格里增加消费流量的统计，以可以按照流量进行迁移优先级的选择
 - 优化统计算法的风险判断，减少误判
@@ -42,4 +42,3 @@ theme: dracula
 - SpaceX 并行网关并发任务数调整为10
 - 风险警告的卡片上，对接飞书上传图片，直接显示图片内容
 - 批量观测大盘增加风险观测区间
-

@@ -223,21 +223,23 @@ class KanbanBoard(Vertical):
         # 重新compose
         categories = self.board.get_all_categories()
         
-        # Header row
+        # Header row - 先创建并挂载容器
         header_row = Horizontal(classes="header-row")
+        self.mount(header_row)
+        # 再挂载子组件（容器已挂载到DOM）
         for category in categories:
             header = ColumnHeader(category)
             self._headers[category] = header
             header_row.mount(header)
-        self.mount(header_row)
         
-        # Columns row
+        # Columns row - 先创建并挂载容器
         columns_row = Horizontal(classes="columns-row")
+        self.mount(columns_row)
+        # 再挂载子组件（容器已挂载到DOM）
         for category in categories:
             column = KanbanColumn(category)
             self.columns[category] = column
             columns_row.mount(column)
-        self.mount(columns_row)
         
         # 重新填充任务
         for task in self.board.tasks:
