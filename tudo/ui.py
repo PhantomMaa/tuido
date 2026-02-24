@@ -148,6 +148,7 @@ class KanbanBoard(Vertical):
     .header-row {
         width: 100%;
         height: auto;
+        margin-bottom: 1;
     }
     .columns-row {
         width: 100%;

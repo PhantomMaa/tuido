@@ -7,8 +7,8 @@
 
 ## In Progress
 - 将迁移结果更新到飞书表格 #feature
-- Color themes #ui
 - Integration with GitHub Issues  (waiting for API key) #integration
+- Color themes #ui
 
 ## Blocked
 - Add search/filter functionality #feature !high
