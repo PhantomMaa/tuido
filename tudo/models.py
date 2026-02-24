@@ -21,7 +21,6 @@ class Task:
     description: str = ""
     tags: list[str] = field(default_factory=list)
     priority: Optional[str] = None
-    assignee: Optional[str] = None
     line_number: int = 0  # Track line number for file updates
     raw_text: str = ""  # Original raw text
 

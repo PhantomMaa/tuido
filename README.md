@@ -8,7 +8,7 @@ A TUI (Terminal User Interface) Kanban board for TODO.md files.
 - 🎯 Visual Kanban board with columns: Todo, In Progress, Blocked, Done
 - ⌨️ Vim-style keybindings (h/j/k/l)
 - ↔️ Move tasks between columns with Shift+Arrow keys
-- 🏷️ Support for tags (#tag), priority (!high/!medium/!low), and assignees (@user)
+- 🏷️ Support for tags (#tag), priority (!high/!medium/!low)
 - 💾 Save changes back to TODO.md
 
 ## Installation
@@ -58,8 +58,8 @@ tudo . --create
 # TODO
 
 ## Todo
-- Task to do #feature !high @dev
-- Another task #bug @qa
+- Task to do #feature !high
+- Another task #bug
 
 ## In Progress
 - Currently working on this
@@ -76,7 +76,6 @@ tudo . --create
 - `- ` - Task prefix (required)
 - `#tag` - Tags
 - `!high` / `!medium` / `!low` / `!critical` - Priority
-- `@username` - Assignee
 
 Task status is determined by which section (`## Todo`, `## In Progress`, `## Blocked`, `## Done`) it belongs to.
 

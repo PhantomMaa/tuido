@@ -65,9 +65,6 @@ class TaskCard(Static):
             color = priority_colors.get(self.task_obj.priority, 'white')
             meta_parts.append(f"[{color} bold]!{self.task_obj.priority}[/{color} bold]")
         
-        if self.task_obj.assignee:
-            meta_parts.append(f"\[@{self.task_obj.assignee}\]")
-        
         if self.task_obj.tags:
             tags_str = " ".join(f"[yellow]#{tag}[/yellow]" for tag in self.task_obj.tags)
             meta_parts.append(tags_str)

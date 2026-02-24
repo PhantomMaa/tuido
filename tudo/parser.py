@@ -11,7 +11,6 @@ def parse_task_content(content: str) -> dict:
         'title': content,
         'tags': [],
         'priority': None,
-        'assignee': None,
     }
     
     # Extract tags (e.g., #bug, #feature)
@@ -26,13 +25,6 @@ def parse_task_content(content: str) -> dict:
     if priority_match:
         result['priority'] = priority_match.group(1).lower()
         result['title'] = re.sub(priority_pattern, '', result['title'], flags=re.IGNORECASE).strip()
-    
-    # Extract assignee (e.g., @username)
-    assignee_pattern = r'@(\w+)'
-    assignee_match = re.search(assignee_pattern, content)
-    if assignee_match:
-        result['assignee'] = assignee_match.group(1)
-        result['title'] = re.sub(assignee_pattern, '', result['title']).strip()
     
     return result
 
@@ -80,7 +72,6 @@ def parse_todo_file(file_path: Path) -> Board:
                 status=current_status,
                 tags=metadata['tags'],
                 priority=metadata['priority'],
-                assignee=metadata['assignee'],
                 line_number=line_num,
                 raw_text=line.rstrip()
             )
@@ -106,9 +97,6 @@ def save_todo_file(file_path: Path, board: Board) -> None:
             content += " " + " ".join(f"#{tag}" for tag in task.tags)
         if task.priority:
             content += f" !{task.priority}"
-        if task.assignee:
-            content += f" @{task.assignee}"
-        
         return f"- {content}"
     
     # Write sections

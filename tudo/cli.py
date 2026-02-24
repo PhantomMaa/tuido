@@ -4,7 +4,7 @@ import argparse
 import sys
 from pathlib import Path
 
-from .parser import parse_todo_file, save_todo_file
+from .parser import parse_todo_file
 from .ui import TudoApp
 
 
@@ -56,19 +56,19 @@ def main():
         sample_content = """# TODO
 
 ## Todo
-- [ ] Implement user authentication #feature !high @dev
-- [ ] Write unit tests #testing @qa
-- [ ] Update documentation #docs
+- Implement user authentication #feature !high
+- Write unit tests #testing
+- Update documentation #docs
 
 ## In Progress
-- [ ] Design database schema #backend @dev
+- Design database schema #backend
 
 ## Blocked
-- [ ] Deploy to production #devops !critical (waiting for approval)
+- Deploy to production #devops !critical (waiting for approval)
 
 ## Done
-- [x] Initial project setup #setup
-- [x] Create repository structure #setup
+- Initial project setup #setup
+- Create repository structure #setup
 """
         todo_file.write_text(sample_content)
         print(f"Created sample TODO.md at {todo_file}")

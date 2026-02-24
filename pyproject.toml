@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "A TUI Kanban board for TODO.md files"
 readme = "README.md"
 license = {text = "MIT"}
-requires-python = ">=3.9"
+requires-python = ">=3.12"
 dependencies = [
     "textual>=0.52.0",
     "rich>=13.0.0",
@@ -19,3 +19,7 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["tudo"]
+
+[tool.black]
+line-length = 150
+target-version = ['py312']

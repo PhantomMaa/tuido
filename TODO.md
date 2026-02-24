@@ -10,7 +10,7 @@
 - Integration with GitHub Issues  (waiting for API key) #integration
 
 ## Blocked
-- Add search/filter functionality #feature !high @dev
+- Add search/filter functionality #feature !high
 
 ## Done
 - Basic Kanban board layout #setup
