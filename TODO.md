@@ -6,8 +6,8 @@
 - Export to different formats (JSON, CSV) #feature
 
 ## In Progress
-- Implement task editing within TUI #feature !high
 - Integration with GitHub Issues  (waiting for API key) #integration
+- Implement task editing within TUI #feature !high
 
 ## Blocked
 - Add search/filter functionality #feature !high

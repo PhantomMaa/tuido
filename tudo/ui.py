@@ -352,7 +352,6 @@ class TudoApp(App):
         super().__init__(**kwargs)
 
     def compose(self) -> ComposeResult:
-        yield Header(show_clock=True)
         self._kanban_board = KanbanBoard(self.board)
         yield self._kanban_board
         yield Footer()
