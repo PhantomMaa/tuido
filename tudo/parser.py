@@ -1,6 +1,6 @@
 import re
 from pathlib import Path
-from .models import Task, TaskStatus, Board
+from .models import Task, Board
 
 
 def parse_task_content(content: str) -> dict:
@@ -77,10 +77,15 @@ def parse_front_matter(lines: list[str]) -> tuple[dict, int]:
 
 
 def parse_todo_file(file_path: Path) -> Board:
-    """Parse a TODO.md file and return a Board."""
+    """Parse a TODO.md file and return a Board.
+    
+    栏目(Category)从二级标题(##)读取，按文件中的顺序展示。
+    """
     board = Board(title="TODO Board")
 
     if not file_path.exists():
+        # 默认栏目
+        board.categories = ["Todo", "In Progress", "Done"]
         return board
 
     with open(file_path, "r", encoding="utf-8") as f:
@@ -90,7 +95,8 @@ def parse_todo_file(file_path: Path) -> Board:
     settings, start_idx = parse_front_matter(lines)
     board.settings = settings
 
-    current_status = TaskStatus.TODO
+    current_category = None
+    categories_order = []
 
     for line_num, line in enumerate(lines[start_idx:], start_idx + 1):
         stripped = line.strip()
@@ -98,44 +104,28 @@ def parse_todo_file(file_path: Path) -> Board:
         if not stripped:
             continue
 
-        # Check for section headers
-        lower_line = stripped.lower()
-        if any(
-            header in lower_line
-            for header in ["# todo", "# to do", "# to-do", "## todo"]
-        ):
-            current_status = TaskStatus.TODO
-            continue
-        elif any(
-            header in lower_line
-            for header in [
-                "# in progress",
-                "# in-progress",
-                "# doing",
-                "## in progress",
-            ]
-        ):
-            current_status = TaskStatus.IN_PROGRESS
-            continue
-        elif any(
-            header in lower_line for header in ["# done", "# completed", "## done"]
-        ):
-            current_status = TaskStatus.DONE
-            continue
-        elif any(
-            header in lower_line for header in ["# blocked", "# waiting", "## blocked"]
-        ):
-            current_status = TaskStatus.BLOCKED
+        # Check for section headers (二级标题 ##)
+        if stripped.startswith("## "):
+            category_name = stripped[3:].strip()
+            current_category = category_name
+            if category_name not in categories_order:
+                categories_order.append(category_name)
             continue
 
         # Only parse lines starting with '- '
         if stripped.startswith("- "):
+            # 如果没有当前栏目，使用默认值
+            if current_category is None:
+                current_category = "Todo"
+                if current_category not in categories_order:
+                    categories_order.append(current_category)
+            
             content = stripped[2:].strip()
             metadata = parse_task_content(content)
 
             task = Task(
                 title=metadata["title"],
-                status=current_status,
+                category=current_category,
                 tags=metadata["tags"],
                 priority=metadata["priority"],
                 line_number=line_num,
@@ -143,17 +133,17 @@ def parse_todo_file(file_path: Path) -> Board:
             )
             board.tasks.append(task)
 
+    # 设置栏目顺序（保留有任务和没有任务的栏目）
+    board.categories = categories_order if categories_order else ["Todo", "In Progress", "Done"]
+    
     return board
 
 
 def save_todo_file(file_path: Path, board: Board) -> None:
-    """Save board back to TODO.md file."""
-    # Group tasks by status
-    todo_tasks = board.get_tasks_by_status(TaskStatus.TODO)
-    in_progress_tasks = board.get_tasks_by_status(TaskStatus.IN_PROGRESS)
-    blocked_tasks = board.get_tasks_by_status(TaskStatus.BLOCKED)
-    done_tasks = board.get_tasks_by_status(TaskStatus.DONE)
-
+    """Save board back to TODO.md file.
+    
+    按 board.categories 顺序写入栏目，每个栏目下写入对应任务。
+    """
     lines = []
     
     # Write front matter settings at the beginning
@@ -176,28 +166,14 @@ def save_todo_file(file_path: Path, board: Board) -> None:
             content += f" !{task.priority}"
         return f"- {content}"
 
-    # Write sections
-    if todo_tasks:
-        lines.append("## Todo\n")
-        for task in todo_tasks:
-            lines.append(format_task(task) + "\n")
-        lines.append("\n")
-
-    if in_progress_tasks:
-        lines.append("## In Progress\n")
-        for task in in_progress_tasks:
-            lines.append(format_task(task) + "\n")
-        lines.append("\n")
-
-    if blocked_tasks:
-        lines.append("## Blocked\n")
-        for task in blocked_tasks:
-            lines.append(format_task(task) + "\n")
-        lines.append("\n")
-
-    if done_tasks:
-        lines.append("## Done\n")
-        for task in done_tasks:
+    # 按栏目顺序写入
+    categories_to_write = board.categories if board.categories else ["Todo", "In Progress", "Done"]
+    
+    for category in categories_to_write:
+        tasks = board.get_tasks_by_category(category)
+        # 即使栏目没有任务也写入空栏目（保留栏目结构）
+        lines.append(f"## {category}\n")
+        for task in tasks:
             lines.append(format_task(task) + "\n")
         lines.append("\n")
 

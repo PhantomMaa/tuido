@@ -8,16 +8,16 @@ theme: dracula
 - Support for due dates #enhancement
 - Export to different formats (JSON, CSV) #feature
 - Implement task editing within TUI #feature !high
+- 在变更开始时给用户发通知 !high
+- 飞书消息通道切换至机器人，卡片上提供回滚和标记成功的按钮。大模型切到豆包等方舟平台上提供的模型 #feature
 
 ## In Progress
-- 将迁移结果更新到飞书表格 #feature
 - Integration with GitHub Issues  (waiting for API key) #integration
 - Color themes #ui
+- 将迁移结果更新到飞书表格 #feature
 
 ## Blocked
 - Add search/filter functionality #feature !high
-- 飞书消息通道切换至机器人，卡片上提供回滚和标记成功的按钮。大模型切到豆包等方舟平台上提供的模型 #feature
-- 在变更开始时给用户发通知 !high
 
 ## Done
 - 观测异常和标记成功逻辑从 dsyncer 迁移至旁路观测 #feature !high
