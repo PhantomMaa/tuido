@@ -16,16 +16,16 @@ class TaskCard(Static):
     TaskCard {
         width: 100%;
         height: auto;
-        padding: 1;
-        margin: 1 0;
-        border: solid $primary;
+        padding: 0 1;
+        margin: 0;
+        border: solid $primary-darken-2;
         background: $surface-darken-1;
     }
     TaskCard:hover {
         background: $surface-lighten-1;
     }
     TaskCard.selected {
-        border: double $success;
+        border: solid $success;
         background: $surface-lighten-2;
     }
     """
@@ -81,77 +81,85 @@ class TaskCard(Static):
             self.remove_class("selected")
 
 
+class ColumnHeader(Static):
+    """Header for a kanban column."""
+
+    DEFAULT_CSS = """
+    ColumnHeader {
+        width: 1fr;
+        height: auto;
+        padding: 0 1;
+        content-align: center middle;
+        text-style: bold;
+        background: $primary-darken-3;
+    }
+    """
+
+    def __init__(self, title: str, **kwargs):
+        self.header_title = title
+        super().__init__(title, **kwargs)
+
+
 class KanbanColumn(Vertical):
-    """A column in the Kanban board."""
+    """A column in the Kanban board (content only, no header)."""
 
     DEFAULT_CSS = """
     KanbanColumn {
         width: 1fr;
         height: 100%;
         border: solid $primary-darken-2;
-        padding: 1;
+        padding: 0 1;
+        overflow-y: auto;
     }
     KanbanColumn:focus-within {
         border: solid $primary;
     }
-    KanbanColumn .header {
-        height: 3;
-        content-align: center middle;
-        text-style: bold;
-        background: $primary-darken-3;
-    }
-    KanbanColumn .content {
-        height: 1fr;
-        overflow-y: auto;
-    }
     """
 
-    def __init__(self, title: str, status: TaskStatus, **kwargs):
-        self.column_title = title
+    def __init__(self, status: TaskStatus, **kwargs):
         self.status = status
         super().__init__(**kwargs)
 
     def compose(self) -> ComposeResult:
-        yield Static(self.column_title, classes="header")
-        yield Vertical(classes="content")
+        yield from []
 
     def add_task(self, task: Task) -> TaskCard:
         """Add a task to this column."""
         card = TaskCard(task)
-        content = self.query_one(".content", Vertical)
-        content.mount(card)
+        self.mount(card)
         return card
 
     def clear_tasks(self) -> None:
         """Clear all tasks from this column."""
-        try:
-            content = self.query_one(".content", Vertical)
-            content.remove_children()
-        except Exception:
-            pass
+        self.remove_children()
 
     def get_task_count(self) -> int:
         """Get the number of tasks in this column."""
-        try:
-            content = self.query_one(".content", Vertical)
-            return len(content.children)
-        except Exception:
-            return 0
+        return len(self.children)
 
 
-class KanbanBoard(Horizontal):
-    """The main Kanban board widget."""
+class KanbanBoard(Vertical):
+    """The main Kanban board widget with header row."""
 
     DEFAULT_CSS = """
     KanbanBoard {
         width: 100%;
         height: 100%;
     }
+    .header-row {
+        width: 100%;
+        height: auto;
+    }
+    .columns-row {
+        width: 100%;
+        height: 1fr;
+    }
     """
 
     def __init__(self, board: Board, **kwargs):
         self.board = board
         self.columns: dict[TaskStatus, KanbanColumn] = {}
+        self._headers: dict[TaskStatus, ColumnHeader] = {}
         self.selected_task_index = 0
         self._column_order = [
             TaskStatus.TODO,
@@ -162,12 +170,20 @@ class KanbanBoard(Horizontal):
         super().__init__(**kwargs)
 
     def compose(self) -> ComposeResult:
-        # Create columns for each status
-        for status in self._column_order:
-            title = status.value.replace("_", " ").title()
-            column = KanbanColumn(title, status)
-            self.columns[status] = column
-            yield column
+        # Header row with column titles
+        with Horizontal(classes="header-row"):
+            for status in self._column_order:
+                title = status.value.replace("_", " ").title()
+                header = ColumnHeader(title)
+                self._headers[status] = header
+                yield header
+
+        # Columns row with task content
+        with Horizontal(classes="columns-row"):
+            for status in self._column_order:
+                column = KanbanColumn(status)
+                self.columns[status] = column
+                yield column
 
     def on_mount(self) -> None:
         """Initialize the board with tasks after mounting."""
@@ -191,13 +207,9 @@ class KanbanBoard(Horizontal):
         cards = []
         for status in self._column_order:
             if status in self.columns:
-                try:
-                    content = self.columns[status].query_one(".content", Vertical)
-                    for child in content.children:
-                        if isinstance(child, TaskCard):
-                            cards.append(child)
-                except Exception:
-                    pass
+                for child in self.columns[status].children:
+                    if isinstance(child, TaskCard):
+                        cards.append(child)
         return cards
 
     def get_visible_columns(self) -> list[TaskStatus]:
@@ -368,7 +380,7 @@ class TudoApp(App):
         super().__init__(**kwargs)
 
     def compose(self) -> ComposeResult:
-        yield Header(show_clock=True)
+        # 直接显示看板，没有额外的标题栏
         self._kanban_board = KanbanBoard(self.board)
         yield self._kanban_board
         yield Footer()
