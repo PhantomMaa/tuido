@@ -45,6 +45,31 @@ class Board:
         """Move a task to a new status."""
         task.status = new_status
 
+    def reorder_task(self, task: Task, direction: str) -> bool:
+        """Reorder a task within its status group. Returns True if reordered."""
+        # Get tasks with same status
+        same_status_tasks = [t for t in self.tasks if t.status == task.status]
+        
+        try:
+            current_idx = same_status_tasks.index(task)
+        except ValueError:
+            return False
+        
+        if direction == "up" and current_idx > 0:
+            # Swap with previous task in same status group
+            other_task = same_status_tasks[current_idx - 1]
+        elif direction == "down" and current_idx < len(same_status_tasks) - 1:
+            # Swap with next task in same status group
+            other_task = same_status_tasks[current_idx + 1]
+        else:
+            return False
+        
+        # Find indices in main tasks list and swap
+        idx1 = self.tasks.index(task)
+        idx2 = self.tasks.index(other_task)
+        self.tasks[idx1], self.tasks[idx2] = self.tasks[idx2], self.tasks[idx1]
+        return True
+
     def get_all_statuses(self) -> list[TaskStatus]:
         """Get all statuses that have tasks, in order."""
         statuses = []

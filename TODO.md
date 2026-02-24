@@ -1,8 +1,8 @@
 # TODO
 
 ## Todo
-- Support for due dates #enhancement
 - Color themes #ui
+- Support for due dates #enhancement
 - Export to different formats (JSON, CSV) #feature
 
 ## In Progress
