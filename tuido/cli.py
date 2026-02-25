@@ -52,7 +52,7 @@ def main():
 
     # Create sample file if requested and doesn't exist
     if args.create and not todo_file.exists():
-        sample_content = """# TODO
+        sample_content = """# TUIDO
 
 ## Todo
 - Implement user authentication #feature !high

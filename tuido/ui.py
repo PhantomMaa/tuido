@@ -1,7 +1,7 @@
 """TUI UI components for tuido."""
 
 from textual.app import App, ComposeResult
-from textual.widgets import Footer, Static
+from textual.widgets import Footer, Header, Static
 from textual.containers import Horizontal, Vertical
 from textual.binding import Binding
 from rich.text import Text
@@ -59,9 +59,7 @@ class TaskCard(Static):
             meta_parts.append(f"[{color} bold]!{self.task_obj.priority}[/{color} bold]")
 
         if self.task_obj.tags:
-            tags_str = " ".join(
-                f"[yellow]#{tag}[/yellow]" for tag in self.task_obj.tags
-            )
+            tags_str = " ".join(f"[yellow]#{tag}[/yellow]" for tag in self.task_obj.tags)
             meta_parts.append(tags_str)
 
         if meta_parts:
@@ -159,9 +157,11 @@ class KanbanBoard(Vertical):
         super().__init__(**kwargs)
 
     def compose(self) -> ComposeResult:
+        yield TitleBar("TUIDO - TUI based TODO list manage Board")
+
         # 获取栏目列表
         categories = self.board.get_all_categories()
-        
+
         # Header row with column titles
         with Horizontal(classes="header-row"):
             for category in categories:
@@ -184,14 +184,14 @@ class KanbanBoard(Vertical):
         """Refresh the board display."""
         # 获取当前栏目顺序
         categories = self.board.get_all_categories()
-        
+
         # 检查是否需要重新创建栏目（栏目数量或顺序变化）
         current_categories = list(self.columns.keys())
         if current_categories != categories:
             # 需要重新构建UI
             self._rebuild_columns()
             return
-        
+
         # Clear all columns
         for column in self.columns.values():
             column.clear_tasks()
@@ -210,19 +210,19 @@ class KanbanBoard(Vertical):
         all_cards = self.get_all_task_cards()
         if all_cards and 0 <= self.selected_task_index < len(all_cards):
             selected_task = all_cards[self.selected_task_index].task_obj
-        
+
         # 清除现有栏目
         self.columns.clear()
         self._headers.clear()
-        
+
         # 重新挂载（通过重新compose）
         # 先移除所有子元素
         for child in list(self.children):
             child.remove()
-        
+
         # 重新compose
         categories = self.board.get_all_categories()
-        
+
         # Header row - 先创建并挂载容器
         header_row = Horizontal(classes="header-row")
         self.mount(header_row)
@@ -231,7 +231,7 @@ class KanbanBoard(Vertical):
             header = ColumnHeader(category)
             self._headers[category] = header
             header_row.mount(header)
-        
+
         # Columns row - 先创建并挂载容器
         columns_row = Horizontal(classes="columns-row")
         self.mount(columns_row)
@@ -240,12 +240,12 @@ class KanbanBoard(Vertical):
             column = KanbanColumn(category)
             self.columns[category] = column
             columns_row.mount(column)
-        
+
         # 重新填充任务
         for task in self.board.tasks:
             if task.category in self.columns:
                 self.columns[task.category].add_task(task)
-        
+
         # 恢复选中状态
         if selected_task:
             all_cards = self.get_all_task_cards()
@@ -253,7 +253,7 @@ class KanbanBoard(Vertical):
                 if card.task_obj == selected_task:
                     self.selected_task_index = i
                     break
-        
+
         self.update_selection()
 
     def get_all_task_cards(self) -> list[TaskCard]:
@@ -357,9 +357,7 @@ class KanbanBoard(Vertical):
         if direction == "up":
             self.selected_task_index = max(0, self.selected_task_index - 1)
         elif direction == "down":
-            self.selected_task_index = min(
-                len(all_cards) - 1, self.selected_task_index + 1
-            )
+            self.selected_task_index = min(len(all_cards) - 1, self.selected_task_index + 1)
         elif direction in ("left", "right"):
             self._navigate_horizontal(direction, all_cards)
 
@@ -391,6 +389,22 @@ class KanbanBoard(Vertical):
             if c.task_obj.category == target_category:
                 self.selected_task_index = i
                 break
+
+
+class TitleBar(Static):
+    """Application title bar."""
+
+    DEFAULT_CSS = """
+    TitleBar {
+        width: 100%;
+        content-align: center middle;
+        text-style: bold;
+    }
+    """
+
+    def __init__(self, title: str, **kwargs):
+        self.bar_title = title
+        super().__init__(title, **kwargs)
 
 
 class TuidoApp(App):
@@ -438,7 +452,6 @@ class TuidoApp(App):
         self.theme = theme
 
     def compose(self) -> ComposeResult:
-        # 直接显示看板，没有额外的标题栏
         self._kanban_board = KanbanBoard(self.board)
         yield self._kanban_board
         yield Footer()

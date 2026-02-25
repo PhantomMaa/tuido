@@ -2,16 +2,16 @@
 theme: textual-dark
 ---
 
-# TODO
+# TUIDO
 
 ## Todo
-- Support for due dates #enhancement
 - Export to different formats (JSON, CSV) #feature
 - Implement task editing within TUI #feature !high
 - 在变更开始时给用户发通知 !high
 - Integration with GitHub Issues  (waiting for API key) #integration
 
 ## In Progress
+- Support for due dates #enhancement
 - Color themes #ui
 - 将迁移结果更新到飞书表格 #feature
 - Add search/filter functionality #feature !high

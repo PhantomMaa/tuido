@@ -154,7 +154,7 @@ def save_todo_file(file_path: Path, board: Board) -> None:
         lines.append("---\n")
         lines.append("\n")
     
-    lines.append("# TODO\n")
+    lines.append("# TUIDO\n")
     lines.append("\n")
 
     def format_task(task: Task) -> str:
