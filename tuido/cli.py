@@ -1,10 +1,10 @@
-"""Command line interface for tudo."""
+"""Command line interface for tuido."""
 
 import argparse
 from pathlib import Path
 
 from .parser import parse_todo_file
-from .ui import TudoApp
+from .ui import TuidoApp
 
 
 def find_todo_file(path: Path) -> Path:
@@ -24,7 +24,7 @@ def find_todo_file(path: Path) -> Path:
 def main():
     """Main entry point."""
     parser = argparse.ArgumentParser(
-        prog="tudo",
+        prog="tuido",
         description="A TUI Kanban board for TODO.md files",
     )
     parser.add_argument(
@@ -76,7 +76,7 @@ def main():
     board = parse_todo_file(todo_file)
 
     # Launch the TUI app
-    app = TudoApp(board, todo_file)
+    app = TuidoApp(board, todo_file)
     app.run()
 
 

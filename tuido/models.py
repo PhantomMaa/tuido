@@ -1,4 +1,4 @@
-"""Data models for tudo."""
+"""Data models for tuido."""
 
 from dataclasses import dataclass, field
 from typing import Optional

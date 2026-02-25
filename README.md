@@ -1,4 +1,4 @@
-# Tudo 📝
+# Tuido 📝
 
 A TUI (Terminal User Interface) Kanban board for TODO.md files.
 
@@ -15,7 +15,7 @@ A TUI (Terminal User Interface) Kanban board for TODO.md files.
 
 ```bash
 # Clone or download the repository
-cd tudo
+cd tuido
 
 # Install in editable mode
 pip install -e .
@@ -25,13 +25,13 @@ pip install -e .
 
 ```bash
 # Open TODO.md in current directory
-tudo .
+tuido .
 
 # Open specific TODO.md file
-tudo path/to/TODO.md
+tuido path/to/TODO.md
 
 # Create a sample TODO.md file
-tudo . --create
+tuido . --create
 ```
 
 ## Keyboard Shortcuts

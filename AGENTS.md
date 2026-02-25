@@ -1,4 +1,4 @@
-# TUDO - 终端看板工具
+# TUIDO - 终端看板工具
 
 基于终端的 Kanban 看板 TUI，用于管理 TODO.md 文件。
 
@@ -6,13 +6,13 @@
 
 - **语言**: Python 3.12+
 - **框架**: Textual (TUI 框架)
-- **入口**: `tudo [path] [--create]`
+- **入口**: `tuido [path] [--create]`
 - **配置**: `pyproject.toml` (setuptools 打包)
 
 ## 架构
 
 ```
-tudo/
+tuido/
 ├── __init__.py      # 包版本
 ├── __main__.py      # CLI 入口 (argparse)
 ├── models.py        # 数据模型: Task, Board, TaskStatus
@@ -138,8 +138,8 @@ if current_status in columns:
 手动运行：
 ```bash
 pip install -e .
-tudo test_todo.md --create  # 创建示例文件
-tudo test_todo.md           # 打开看板
+tuido test_todo.md --create  # 创建示例文件
+tuido test_todo.md           # 打开看板
 ```
 
 ## 依赖

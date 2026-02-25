@@ -1,5 +1,5 @@
 [project]
-name = "tudo"
+name = "tuido"
 version = "0.1.0"
 description = "A TUI Kanban board for TODO.md files"
 readme = "README.md"
@@ -11,14 +11,14 @@ dependencies = [
 ]
 
 [project.scripts]
-tudo = "tudo.cli:main"
+tuido = "tuido.cli:main"
 
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["tudo"]
+packages = ["tuido"]
 
 [tool.black]
 line-length = 150

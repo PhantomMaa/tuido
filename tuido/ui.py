@@ -1,4 +1,4 @@
-"""TUI UI components for tudo."""
+"""TUI UI components for tuido."""
 
 from textual.app import App, ComposeResult
 from textual.widgets import Footer, Static
@@ -393,7 +393,7 @@ class KanbanBoard(Vertical):
                 break
 
 
-class TudoApp(App):
+class TuidoApp(App):
     """Main TUI application."""
 
     CSS = """
