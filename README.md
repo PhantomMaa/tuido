@@ -5,10 +5,12 @@ A TUI (Terminal User Interface) Kanban board for TODO.md files.
 ## Features
 
 - 📋 Parse TODO.md files with simple list syntax
-- 🎯 Visual Kanban board with columns: Todo, In Progress, Blocked, Done
+- 📊 **Dynamic columns** based on markdown sections (`## Heading`)
+- 🎨 Multiple themes (Dracula, Nord, Monokai, Solarized, etc.)
 - ⌨️ Vim-style keybindings (h/j/k/l)
 - ↔️ Move tasks between columns with Shift+Arrow keys
-- 🏷️ Support for tags (#tag), priority (!high/!medium/!low)
+- 🔃 Reorder tasks within column
+- 🏷️ Support for tags (#tag), priority (!high/!medium/!low/!critical)
 - 💾 Save changes back to TODO.md
 
 ## Installation
@@ -42,17 +44,18 @@ tuido . --create
 - `←`/`h` - Previous column
 - `→`/`l` - Next column
 
-### Move Tasks
+### Move Tasks (Between Columns)
 - `Shift+←` / `Shift+H` - Move task to left column
 - `Shift+→` / `Shift+L` - Move task to right column
 
-## Reorder Tasks (Within Column)
+### Reorder Tasks (Within Column)
 - `Shift+↑` / `Shift+K` - Move task up
 - `Shift+↓` / `Shift+J` - Move task down
 
 ### Actions
 - `r` - Refresh from file
 - `s` - Save to file
+- `t` - Switch theme
 - `q` - Quit
 - `?` - Help
 
@@ -68,20 +71,32 @@ tuido . --create
 ## In Progress
 - Currently working on this
 
-## Blocked
-- Waiting for something
+## Review
+- Waiting for review #pr
 
 ## Done
 - Completed task
 ```
 
-### Syntax
+### Dynamic Columns
+
+Columns are automatically created from `## ` headings in your TODO.md file. You can define any columns you need:
+
+- `## Todo` - Tasks to do
+- `## In Progress` - Tasks being worked on
+- `## Review` - Tasks pending review
+- `## Blocked` - Blocked tasks
+- `## Done` - Completed tasks
+
+The column order follows the order they appear in the file.
+
+### Task Syntax
 
 - `- ` - Task prefix (required)
-- `#tag` - Tags
+- `#tag` - Tags (e.g., #feature, #bug, #docs)
 - `!high` / `!medium` / `!low` / `!critical` - Priority
 
-Task status is determined by which section (`## Todo`, `## In Progress`, `## Blocked`, `## Done`) it belongs to.
+Task status is determined by which section (`## Todo`, `## In Progress`, etc.) it belongs to.
 
 ## Requirements
 
