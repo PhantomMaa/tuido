@@ -10,7 +10,7 @@ A TUI (Terminal User Interface) Kanban board for TODO.md files.
 - ⌨️ Vim-style keybindings (h/j/k/l)
 - ↔️ Move tasks between columns with Shift+Arrow keys
 - 🔃 Reorder tasks within column
-- 🏷️ Support for tags (#tag), priority (!high/!medium/!low/!critical)
+- 🏷️ Support for tags (#tag), priority (!P0/!P1/!P2/!P3/!P4)
 - 💾 Save changes back to TODO.md
 
 ## Installation
@@ -65,7 +65,7 @@ tuido . --create
 # TODO
 
 ## Todo
-- Task to do #feature !high
+- Task to do #feature !P1
 - Another task #bug
 
 ## In Progress
@@ -94,7 +94,7 @@ The column order follows the order they appear in the file.
 
 - `- ` - Task prefix (required)
 - `#tag` - Tags (e.g., #feature, #bug, #docs)
-- `!high` / `!medium` / `!low` / `!critical` - Priority
+- `!P0` / `!P1` / `!P2` / `!P3` / `!P4` - Priority (P0 = highest, P4 = lowest)
 
 Task status is determined by which section (`## Todo`, `## In Progress`, etc.) it belongs to.
 

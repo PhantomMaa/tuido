@@ -17,13 +17,13 @@ def parse_task_content(content: str) -> dict:
     result["tags"] = tags
     result["title"] = re.sub(tag_pattern, "", content).strip()
 
-    # Extract priority (e.g., !high, !medium, !low)
-    priority_pattern = r"!((?:high|medium|low|critical))"
-    priority_match = re.search(priority_pattern, content, re.IGNORECASE)
+    # Extract priority (e.g., !P0, !P1, !P2, !P3, !P4)
+    priority_pattern = r"!([Pp][0-4])"
+    priority_match = re.search(priority_pattern, content)
     if priority_match:
-        result["priority"] = priority_match.group(1).lower()
+        result["priority"] = priority_match.group(1).upper()
         result["title"] = re.sub(
-            priority_pattern, "", result["title"], flags=re.IGNORECASE
+            priority_pattern, "", result["title"]
         ).strip()
 
     return result
@@ -163,7 +163,7 @@ def save_todo_file(file_path: Path, board: Board) -> None:
         if task.tags:
             content += " " + " ".join(f"#{tag}" for tag in task.tags)
         if task.priority:
-            content += f" !{task.priority}"
+            content += f" !{task.priority.upper()}"
         return f"- {content}"
 
     # 按栏目顺序写入

@@ -1,7 +1,7 @@
 """TUI UI components for tuido."""
 
 from textual.app import App, ComposeResult
-from textual.widgets import Footer, Header, Static
+from textual.widgets import Footer, Static
 from textual.containers import Horizontal, Vertical
 from textual.binding import Binding
 from rich.text import Text
@@ -50,13 +50,14 @@ class TaskCard(Static):
         meta_parts = []
         if self.task_obj.priority:
             priority_colors = {
-                "high": "dark_red",
-                "critical": "dark_red",
-                "medium": "dark_yellow",
-                "low": "dark_green",
+                "P0": "red",
+                "P1": "bright_red",
+                "P2": "yellow",
+                "P3": "green",
+                "P4": "dim",
             }
-            color = priority_colors.get(self.task_obj.priority, "white")
-            meta_parts.append(f"[{color} bold]!{self.task_obj.priority}[/{color} bold]")
+            color = priority_colors.get(self.task_obj.priority.upper(), "white")
+            meta_parts.append(f"[{color} bold]!{self.task_obj.priority.upper()}[/{color} bold]")
 
         if self.task_obj.tags:
             tags_str = " ".join(f"[yellow]#{tag}[/yellow]" for tag in self.task_obj.tags)
