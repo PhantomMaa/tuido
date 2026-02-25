@@ -33,10 +33,6 @@ class Board:
         """Get all tasks in the given category."""
         return [t for t in self.tasks if t.category == category]
 
-    def move_task(self, task: Task, new_category: str) -> None:
-        """Move a task to a new category."""
-        task.category = new_category
-
     def reorder_task(self, task: Task, direction: str) -> bool:
         """Reorder a task within its category. Returns True if reordered."""
         # Get tasks in same category
@@ -64,42 +60,23 @@ class Board:
 
     def get_all_categories(self) -> list[str]:
         """Get all categories in order.
-        
+
         优先使用 self.categories 中定义的顺序，
         对于没有在 categories 列表中的任务，按出现顺序追加。
         """
         # 从预设顺序中获取有任务的栏目
         result = []
         seen = set()
-        
+
         for cat in self.categories:
             if any(t.category == cat for t in self.tasks):
                 result.append(cat)
                 seen.add(cat)
-        
+
         # 追加未在预设顺序中的栏目（按任务出现顺序）
         for task in self.tasks:
             if task.category not in seen:
                 result.append(task.category)
                 seen.add(task.category)
-        
+
         return result if result else ["Todo", "In Progress", "Done"]
-
-    def add_category(self, category: str) -> None:
-        """Add a category if not exists."""
-        if category not in self.categories:
-            self.categories.append(category)
-
-    def move_category(self, category: str, direction: str) -> bool:
-        """Move a category left or right in the order."""
-        if category not in self.categories:
-            return False
-        
-        idx = self.categories.index(category)
-        if direction == "left" and idx > 0:
-            self.categories[idx], self.categories[idx - 1] = self.categories[idx - 1], self.categories[idx]
-            return True
-        elif direction == "right" and idx < len(self.categories) - 1:
-            self.categories[idx], self.categories[idx + 1] = self.categories[idx + 1], self.categories[idx]
-            return True
-        return False

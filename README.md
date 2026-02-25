@@ -46,6 +46,10 @@ tuido . --create
 - `Shift+←` / `Shift+H` - Move task to left column
 - `Shift+→` / `Shift+L` - Move task to right column
 
+## Reorder Tasks (Within Column)
+- `Shift+↑` / `Shift+K` - Move task up
+- `Shift+↓` / `Shift+J` - Move task down
+
 ### Actions
 - `r` - Refresh from file
 - `s` - Save to file
