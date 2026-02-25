@@ -15,40 +15,44 @@
 tuido/
 ├── __init__.py      # 包版本
 ├── __main__.py      # CLI 入口 (argparse)
-├── models.py        # 数据模型: Task, Board, TaskStatus
+├── models.py        # 数据模型: Task, Board
 ├── parser.py        # TODO.md 读写逻辑
 └── ui.py            # Textual TUI 实现
 ```
 
 ## 数据格式 (TODO.md)
 
-任务状态由章节标题决定，而非前缀：
+**栏目(Category)是动态的，由二级标题决定**。TODO.md 中的每个 `## ` 标题成为一个看板列，按文件中出现的顺序展示。
 
 ```markdown
 ## Todo
-- 任务描述 #标签 !优先级 @负责人
+- 任务描述 #标签 !优先级
 
 ## In Progress
-- 另一个任务 #功能 !高 @开发
+- 进行中的任务 #功能 !高
 
-## Blocked
-- 被阻塞的任务
+## Review
+- 待审核的任务
 
 ## Done
 - 已完成的任务
 ```
 
+### 动态栏目
+- 栏目由 `## 标题` 自动读取，无需修改代码
+- 可在文件中定义任意数量的栏目
+- 栏目顺序遵循文件中的出现顺序
+
 ### 元数据语法
 - `#标签` - 标签 (如 #功能, #缺陷)
-- `!优先级` - 优先级 (如 !高, !低)
-- `@负责人` - 负责人 (如 @开发, @设计)
+- `!优先级` - 优先级 (如 !high, !medium, !low, !critical)
 
 ## 核心类
 
 ### models.py
-- `TaskStatus` 枚举: `TODO`, `IN_PROGRESS`, `DONE`, `BLOCKED`
-- `Task`: 标题、状态、标签列表、优先级、负责人、行号
-- `Board`: 任务列表、按状态获取任务、移动任务、重排序任务
+- `Task`: 标题、**category(栏目名称)**、标签列表、优先级、行号
+  - `category`: 字符串，对应 TODO.md 中的二级标题
+- `Board`: 任务列表、**栏目顺序列表(categories)**、按栏目获取任务、重排序任务
 
 ### ui.py
 - `TaskCard`: 单个任务组件 (**重要: 使用 `task_obj`, 不要用 `task`**)
@@ -62,13 +66,10 @@ tuido/
 - `q` 或 `Ctrl+C` - 退出
 
 ### 任务操作
-- `Shift+←/H` - 左移 (改变状态)
-- `Shift+→/L` - 右移 (改变状态)
+- `Shift+←/H` - 左移 (移到上一栏目)
+- `Shift+→/L` - 右移 (移到下一栏目)
 - `Shift+↑/K` - 上移 (同列内调整顺序)
 - `Shift+↓/J` - 下移 (同列内调整顺序)
-
-### 视图
-- `b` - 切换 Blocked 列显示/隐藏
 
 ## 关键约定
 
@@ -127,11 +128,15 @@ if current_status in columns:
 2. 用特殊字符测试标题/标签/负责人
 3. 确保 Rich 标记已正确转义
 
-### 添加新状态列
-1. 在 `TaskStatus` 枚举中添加
-2. 更新 `ui.py` 中的 `STATUS_ORDER`
-3. 更新 `parse_todo_file()` 的章节检测
-4. 更新 `save_todo_file()` 的章节写入
+### 添加新栏目
+直接在 TODO.md 中添加新的二级标题即可，无需修改代码：
+
+```markdown
+## 新栏目
+- 新任务
+```
+
+刷新看板后，新栏目会自动显示。
 
 ## 测试
 
