@@ -27,24 +27,35 @@ class TaskCard(Static):
         border: solid $accent;
         background: $surface;
     }
+    TaskCard.subtask {
+        margin-left: 2;
+        border-left: solid $surface-lighten-2;
+    }
     """
 
-    def __init__(self, task_obj: Task, **kwargs):
+    def __init__(self, task_obj: Task, is_subtask: bool = False, **kwargs):
         self.task_obj = task_obj
         self.selected = False
+        self.is_subtask = is_subtask
         super().__init__(**kwargs)
 
     def on_mount(self) -> None:
         """Mount and render the task."""
+        if self.is_subtask:
+            self.add_class("subtask")
         self.update(self.render_task())
 
     def render_task(self) -> Text:
         """Render task as Rich text."""
         lines = []
 
-        # Title
+        # Title with subtask indicator
         title = self.task_obj.title
-        lines.append(f"[bold]{title}[/bold]")
+        if self.is_subtask:
+            # 子任务使用不同前缀
+            lines.append(f"[dim]└─[/dim] [bold]{title}[/bold]")
+        else:
+            lines.append(f"[bold]{title}[/bold]")
 
         # Metadata line
         meta_parts = []
@@ -64,7 +75,9 @@ class TaskCard(Static):
             meta_parts.append(tags_str)
 
         if meta_parts:
-            lines.append(" ".join(meta_parts))
+            # 子任务的元数据增加缩进
+            prefix = "   " if self.is_subtask else ""
+            lines.append(prefix + " ".join(meta_parts))
 
         return Text.from_markup("\n".join(lines))
 
@@ -116,10 +129,15 @@ class KanbanColumn(Vertical):
     def compose(self) -> ComposeResult:
         yield from []
 
-    def add_task(self, task: Task) -> TaskCard:
-        """Add a task to this column."""
-        card = TaskCard(task)
+    def add_task(self, task: Task, is_subtask: bool = False) -> TaskCard:
+        """Add a task to this column, including its subtasks."""
+        card = TaskCard(task, is_subtask=is_subtask)
         self.mount(card)
+        
+        # 递归添加子任务
+        for subtask in task.subtasks:
+            self.add_task(subtask, is_subtask=True)
+        
         return card
 
     def clear_tasks(self) -> None:

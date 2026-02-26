@@ -15,6 +15,9 @@ class Task:
     priority: Optional[str] = None
     line_number: int = 0  # Track line number for file updates
     raw_text: str = ""  # Original raw text
+    level: int = 0  # 层级深度，0为父任务，1+为子任务
+    parent: Optional['Task'] = None  # 父任务引用
+    subtasks: list['Task'] = field(default_factory=list)  # 子任务列表
 
     def __str__(self) -> str:
         return f"[{self.column}] {self.title}"
@@ -81,4 +84,13 @@ class Board:
         # Add to new column
         task.column = new_column
         self.columns[new_column].append(task)
+        
+        # 递归更新所有子任务的 column 属性
+        self._update_subtask_columns(task, new_column)
         return True
+    
+    def _update_subtask_columns(self, task: Task, new_column: str) -> None:
+        """递归更新子任务的 column 属性。"""
+        for subtask in task.subtasks:
+            subtask.column = new_column
+            self._update_subtask_columns(subtask, new_column)
