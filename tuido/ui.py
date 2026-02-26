@@ -399,13 +399,18 @@ class KanbanBoard(Vertical):
 
         idx = columns.index(current_column)
         offset = -1 if direction == "left" else 1
+
+        # Find next non-empty column (skip empty columns)
+        target_column = None
         target_idx = idx + offset
+        while 0 <= target_idx < len(columns):
+            col = columns[target_idx]
+            if col in self.kanban_columns and self.kanban_columns[col].get_task_count() > 0:
+                target_column = col
+                break
+            target_idx += offset
 
-        if not (0 <= target_idx < len(columns)):
-            return
-
-        target_column = columns[target_idx]
-        if target_column not in self.kanban_columns or self.kanban_columns[target_column].get_task_count() == 0:
+        if target_column is None:
             return
 
         # Find first task of target column
