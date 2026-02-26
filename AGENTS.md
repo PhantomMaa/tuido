@@ -6,7 +6,7 @@
 
 - **语言**: Python 3.12+
 - **框架**: Textual (TUI 框架)
-- **入口**: `tuido [path] [--create]`
+- **入口**: `tuido [path] [--create] [--push]`
 - **配置**: `pyproject.toml` (setuptools 打包)
 
 ## 架构
@@ -14,15 +14,35 @@
 ```
 tuido/
 ├── __init__.py      # 包版本
-├── __main__.py      # CLI 入口 (argparse)
-├── models.py        # 数据模型: Task, Board
+├── cli.py           # CLI 入口 (argparse)
+├── models.py        # 数据模型: Task, Board, FeishuTask
 ├── parser.py        # TODO.md 读写逻辑
-└── ui.py            # Textual TUI 实现
+├── ui.py            # Textual TUI 实现
+├── feishu.py        # 飞书 API 封装
+└── envs.py          # 环境变量加载
 ```
 
 ## 数据格式 (TODO.md)
 
 **栏目(Column)是动态的，由二级标题决定**。TODO.md 中的每个 `## ` 标题成为一个看板列，按文件中出现的顺序展示。
+
+### Front Matter 配置
+
+TODO.md 支持 YAML front matter 格式配置，放在文件开头：
+
+```markdown
+---
+theme: textual-dark
+remote:
+  feishu_table_app_token: xxx
+  feishu_table_id: yyy
+---
+```
+
+支持的配置项：
+- `theme`: TUI 主题
+- `remote.feishu_table_app_token`: 飞书多维表格 app token
+- `remote.feishu_table_id`: 飞书多维表格 ID
 
 ```markdown
 ## Todo
@@ -159,6 +179,32 @@ if current_status in columns:
 
 刷新看板后，新栏目会自动显示。
 
+## 飞书同步
+
+使用 `--push` 命令将任务同步到飞书多维表格：
+
+```bash
+# 推送当前目录 TODO.md 的任务到飞书
+tuido --push
+
+# 指定项目名（默认使用目录名）
+tuido --push --project "MyProject"
+
+# 推送指定路径的 TODO.md
+tuido /path/to/project --push
+```
+
+**要求**：
+1. `.env` 文件包含 `BOT_APP_ID` 和 `BOT_APP_SECRET`
+2. TODO.md 的 front matter 中配置了 `remote.feishu_table_app_token` 和 `remote.feishu_table_id`
+
+飞书表格字段映射：
+- `Task`: 任务标题（带子任务层级）
+- `Project`: 项目名称
+- `Status`: 任务状态（栏目名称）
+- `Tags`: 标签（逗号分隔）
+- `Priority`: 优先级
+
 ## 测试
 
 手动运行：
@@ -166,6 +212,7 @@ if current_status in columns:
 pip install -e .
 tuido test_todo.md --create  # 创建示例文件
 tuido test_todo.md           # 打开看板
+tuido --push                 # 推送到飞书
 ```
 
 ## 依赖

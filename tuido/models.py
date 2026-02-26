@@ -6,6 +6,7 @@ from typing import Optional
 
 @dataclass
 class FeishuTask:
+    """Represents a task for Feishu table export."""
     task: str
     project: str
     status: str

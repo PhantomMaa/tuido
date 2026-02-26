@@ -5,6 +5,9 @@ from pathlib import Path
 
 from .parser import parse_todo_file
 from .ui import TuidoApp
+from .feishu import FeishuTable
+from .models import Board, FeishuTask
+from .envs import bot_app_id, bot_app_secret
 
 
 def find_todo_file(path: Path) -> Path:
@@ -19,6 +22,98 @@ def find_todo_file(path: Path) -> Path:
         return path / "TODO.md"
     else:
         return path
+
+
+def push_to_feishu(board: Board, project_name: str) -> bool:
+    """Push tasks to Feishu table.
+
+    Args:
+        board: The Board object containing tasks
+        project_name: Project name to identify tasks in Feishu
+
+    Returns:
+        True if successful, False otherwise
+    """
+    # Get Feishu config from board settings
+    settings = board.settings
+    remote_config = settings.get("remote", {})
+
+    table_app_token = remote_config.get("feishu_table_app_token")
+    table_id = remote_config.get("feishu_table_id")
+
+    if not table_app_token or not table_id:
+        print("Error: Feishu table configuration not found in TODO.md front matter.")
+        print("Please add the following to your TODO.md:")
+        print(
+            """---
+remote:
+  feishu_table_app_token: your_app_token
+  feishu_table_id: your_table_id
+---"""
+        )
+        return False
+
+    # Collect all tasks
+    tasks: list[FeishuTask] = []
+
+    def collect_tasks(column_name: str, task_list: list, parent_title: str = ""):
+        """Recursively collect tasks and their subtasks."""
+        for task in task_list:
+            # Build full title with parent prefix if exists
+            if parent_title:
+                full_title = f"{parent_title} > {task.title}"
+            else:
+                full_title = task.title
+
+            feishu_task = FeishuTask(
+                task=full_title,
+                project=project_name,
+                status=column_name,
+                tags=task.tags,
+                priority=task.priority or "",
+            )
+            tasks.append(feishu_task)
+
+            # Recursively collect subtasks
+            if task.subtasks:
+                collect_tasks(column_name, task.subtasks, full_title)
+
+    # Iterate through all columns and collect tasks
+    for column_name, task_list in board.columns.items():
+        collect_tasks(column_name, task_list)
+
+    if not tasks:
+        print("No tasks found to push.")
+        return True
+
+    # Convert to Feishu records format
+    # Note: Tags should be an array for MultiSelect field type
+    records = []
+    for task in tasks:
+        fields = {
+            "Task": task.task,
+            "Project": task.project,
+            "Status": task.status,
+            "Tags": task.tags,
+            "Priority": task.priority,
+        }
+        record = {"fields": fields}
+        records.append(record)
+
+    # Initialize Feishu bot and push
+    try:
+        bot = FeishuTable(bot_app_id, bot_app_secret, table_app_token, table_id)
+        success = bot.batch_create(records)
+
+        if success:
+            print(f"Successfully pushed {len(records)} tasks to Feishu table.")
+            return True
+        else:
+            print("Failed to push tasks to Feishu table.")
+            return False
+    except Exception as e:
+        print(f"Error pushing to Feishu: {e}")
+        return False
 
 
 def main():
@@ -43,7 +138,11 @@ def main():
         action="store_true",
         help="Create a sample TODO.md if it doesn't exist",
     )
-
+    parser.add_argument(
+        "--push",
+        action="store_true",
+        help="Push tasks to Feishu table (requires remote config in TODO.md)",
+    )
     args = parser.parse_args()
 
     # Resolve the path
@@ -76,11 +175,31 @@ theme: textual-dark
 """
         todo_file.write_text(sample_content)
         print(f"Created sample TODO.md at {todo_file}")
+        return
+
+    # Check if file exists
+    if not todo_file.exists():
+        print(f"Error: TODO.md not found at {todo_file}")
+        print("Use --create to create a sample file.")
+        return
 
     # Parse the todo file
     board = parse_todo_file(todo_file)
 
-    # Launch the TUI app
+    # Handle --push command
+    if args.push:
+        # Determine project name
+        project_name: str
+        # Use parent directory name as project name
+        if todo_file.is_dir():
+            project_name = todo_file.name
+        else:
+            project_name = todo_file.parent.name
+
+        success = push_to_feishu(board, project_name)
+        return 0 if success else 1
+
+    # Launch the TUI app (default behavior)
     app = TuidoApp(board, todo_file)
     app.run()
 

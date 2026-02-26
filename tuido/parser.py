@@ -35,10 +35,13 @@ def parse_front_matter(lines: list[str]) -> tuple[dict, int]:
     Standard format:
         ---
         key: value
+        nested:
+          subkey: subvalue
         ---
         # Title
         content...
     
+    Supports nested blocks with 2-space indentation.
     Returns (settings_dict, line_index_to_continue_parsing)
     """
     settings = {}
@@ -60,18 +63,53 @@ def parse_front_matter(lines: list[str]) -> tuple[dict, int]:
     if end_idx == -1:
         return settings, 0
     
-    # Parse settings content between --- markers
+    # Parse settings content between --- markers with support for nested blocks
+    current_nested_key = None
+    
     for i in range(1, end_idx):
-        line = lines[i].strip()
-        if not line or line.startswith('#'):
+        line = lines[i]
+        stripped = line.strip()
+        
+        if not stripped or stripped.startswith('#'):
             continue
         
-        # Parse key: value format
-        if ':' in line:
-            key, value = line.split(':', 1)
+        # Check if this is a nested block start (key: with no value, followed by indented content)
+        # or a simple key: value
+        if ':' in stripped:
+            key, value = stripped.split(':', 1)
             key = key.strip()
             value = value.strip()
-            settings[key] = value
+            
+            # Check if next non-empty line is indented (indicating a nested block)
+            next_line_indent = 0
+            for j in range(i + 1, end_idx):
+                next_stripped = lines[j].strip()
+                if next_stripped and not next_stripped.startswith('#'):
+                    next_line_indent = len(lines[j]) - len(lines[j].lstrip())
+                    break
+            
+            current_indent = len(line) - len(line.lstrip())
+            
+            if not value and next_line_indent > current_indent:
+                # This is a nested block start
+                current_nested_key = key
+                settings[key] = {}
+            elif current_nested_key is not None:
+                # Check if this line is indented under current nested block
+                if current_indent > 0:
+                    settings[current_nested_key][key] = value
+                else:
+                    # Back to top level
+                    current_nested_key = None
+                    settings[key] = value
+            else:
+                # Top level key-value
+                settings[key] = value
+        elif current_nested_key is not None:
+            # Handle lines that might be part of nested block but don't have ':'
+            current_indent = len(line) - len(line.lstrip())
+            if current_indent == 0:
+                current_nested_key = None
     
     return settings, end_idx + 1
 
