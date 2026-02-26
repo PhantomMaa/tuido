@@ -22,52 +22,63 @@ class Task:
 
 @dataclass
 class Board:
-    """Represents a Kanban board with tasks."""
+    """Represents a Kanban board with tasks.
+
+    数据存储结构：columns 是 OrderedDict，key 为栏目名，value 为该栏目下的任务列表。
+    栏目顺序由 dict 的 key 顺序决定（Python 3.7+ dict 保持插入顺序）。
+    """
 
     title: str = "TODO Board"
-    tasks: list[Task] = field(default_factory=list)
+    columns: dict[str, list[Task]] = field(default_factory=dict)
     settings: dict = field(default_factory=dict)
-    categories: list[str] = field(default_factory=list)  # 栏目顺序列表
 
     def get_tasks_by_category(self, category: str) -> list[Task]:
         """Get all tasks in the given category."""
-        return [t for t in self.tasks if t.category == category]
+        return self.columns.get(category, [])
+
+    def get_all_tasks(self) -> list[Task]:
+        """Get all tasks in file order (by category order, then by position in category)."""
+        result = []
+        for tasks in self.columns.values():
+            result.extend(tasks)
+        return result
 
     def reorder_task(self, task: Task, direction: str) -> bool:
         """Reorder a task within its category. Returns True if reordered."""
-        # Get tasks in same category
-        same_category_tasks = [t for t in self.tasks if t.category == task.category]
+        tasks = self.columns.get(task.category, [])
 
         try:
-            current_idx = same_category_tasks.index(task)
+            current_idx = tasks.index(task)
         except ValueError:
             return False
 
         if direction == "up" and current_idx > 0:
-            # Swap with previous task in same category
-            other_task = same_category_tasks[current_idx - 1]
-        elif direction == "down" and current_idx < len(same_category_tasks) - 1:
-            # Swap with next task in same category
-            other_task = same_category_tasks[current_idx + 1]
-        else:
-            return False
+            # Swap with previous task
+            tasks[current_idx], tasks[current_idx - 1] = tasks[current_idx - 1], tasks[current_idx]
+            return True
+        elif direction == "down" and current_idx < len(tasks) - 1:
+            # Swap with next task
+            tasks[current_idx], tasks[current_idx + 1] = tasks[current_idx + 1], tasks[current_idx]
+            return True
 
-        # Find indices in main tasks list and swap
-        idx1 = self.tasks.index(task)
-        idx2 = self.tasks.index(other_task)
-        self.tasks[idx1], self.tasks[idx2] = self.tasks[idx2], self.tasks[idx1]
-        return True
+        return False
 
     def get_all_categories(self) -> list[str]:
-        """Get all categories in order.
+        """Get all categories in order."""
+        return list(self.columns.keys()) or ["Todo", "In Progress", "Done"]
 
-        优先使用 self.categories 中定义的顺序，
-        对于没有在 categories 列表中的任务，按出现顺序追加。
-        """
-        result = list(self.categories)
+    def move_task_to_category(self, task: Task, new_category: str) -> bool:
+        """Move a task to a different category. Returns True if moved."""
+        if new_category not in self.columns:
+            return False
 
-        for task in self.tasks:
-            if task.category not in result:
-                result.append(task.category)
+        old_tasks = self.columns.get(task.category, [])
+        if task not in old_tasks:
+            return False
 
-        return result or ["Todo", "In Progress", "Done"]
+        # Remove from old category
+        old_tasks.remove(task)
+        # Add to new category
+        task.category = new_category
+        self.columns[new_category].append(task)
+        return True

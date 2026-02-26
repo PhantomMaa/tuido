@@ -198,9 +198,10 @@ class KanbanBoard(Vertical):
             column.clear_tasks()
 
         # Add tasks to appropriate columns
-        for task in self.board.tasks:
-            if task.category in self.columns:
-                self.columns[task.category].add_task(task)
+        for category, tasks in self.board.columns.items():
+            if category in self.columns:
+                for task in tasks:
+                    self.columns[category].add_task(task)
 
         self.update_selection()
 
@@ -243,9 +244,10 @@ class KanbanBoard(Vertical):
             columns_row.mount(column)
 
         # 重新填充任务
-        for task in self.board.tasks:
-            if task.category in self.columns:
-                self.columns[task.category].add_task(task)
+        for category, tasks in self.board.columns.items():
+            if category in self.columns:
+                for task in tasks:
+                    self.columns[category].add_task(task)
 
         # 恢复选中状态
         if selected_task:
@@ -315,8 +317,8 @@ class KanbanBoard(Vertical):
                 new_category = columns[current_idx + 1]
 
             if new_category:
-                # Update task category
-                card.task_obj.category = new_category
+                # Move task to new category in board data
+                self.board.move_task_to_category(card.task_obj, new_category)
 
                 # Refresh the entire board
                 self.refresh_board()

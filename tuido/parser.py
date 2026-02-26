@@ -85,7 +85,7 @@ def parse_todo_file(file_path: Path) -> Board:
 
     if not file_path.exists():
         # 默认栏目
-        board.categories = ["Todo", "In Progress", "Done"]
+        board.columns = {"Todo": [], "In Progress": [], "Done": []}
         return board
 
     with open(file_path, "r", encoding="utf-8") as f:
@@ -96,7 +96,6 @@ def parse_todo_file(file_path: Path) -> Board:
     board.settings = settings
 
     current_category = None
-    categories_order = []
 
     for line_num, line in enumerate(lines[start_idx:], start_idx + 1):
         stripped = line.strip()
@@ -108,8 +107,9 @@ def parse_todo_file(file_path: Path) -> Board:
         if stripped.startswith("## "):
             category_name = stripped[3:].strip()
             current_category = category_name
-            if category_name not in categories_order:
-                categories_order.append(category_name)
+            # 确保栏目存在（保留空栏目）
+            if category_name not in board.columns:
+                board.columns[category_name] = []
             continue
 
         # Only parse lines starting with '- '
@@ -117,8 +117,8 @@ def parse_todo_file(file_path: Path) -> Board:
             # 如果没有当前栏目，使用默认值
             if current_category is None:
                 current_category = "Todo"
-                if current_category not in categories_order:
-                    categories_order.append(current_category)
+                if current_category not in board.columns:
+                    board.columns[current_category] = []
             
             content = stripped[2:].strip()
             metadata = parse_task_content(content)
@@ -131,10 +131,11 @@ def parse_todo_file(file_path: Path) -> Board:
                 line_number=line_num,
                 raw_text=line.rstrip(),
             )
-            board.tasks.append(task)
+            board.columns[current_category].append(task)
 
-    # 设置栏目顺序（保留有任务和没有任务的栏目）
-    board.categories = categories_order if categories_order else ["Todo", "In Progress", "Done"]
+    # 如果没有解析到任何栏目，使用默认值
+    if not board.columns:
+        board.columns = {"Todo": [], "In Progress": [], "Done": []}
     
     return board
 
@@ -142,7 +143,7 @@ def parse_todo_file(file_path: Path) -> Board:
 def save_todo_file(file_path: Path, board: Board) -> None:
     """Save board back to TODO.md file.
     
-    按 board.categories 顺序写入栏目，每个栏目下写入对应任务。
+    按 board.columns 顺序写入栏目，每个栏目下写入对应任务。
     """
     lines = []
     
@@ -166,11 +167,8 @@ def save_todo_file(file_path: Path, board: Board) -> None:
             content += f" !{task.priority.upper()}"
         return f"- {content}"
 
-    # 按栏目顺序写入
-    categories_to_write = board.categories if board.categories else ["Todo", "In Progress", "Done"]
-    
-    for category in categories_to_write:
-        tasks = board.get_tasks_by_category(category)
+    # 按栏目顺序写入（board.columns 是有序 dict）
+    for category, tasks in board.columns.items():
         # 即使栏目没有任务也写入空栏目（保留栏目结构）
         lines.append(f"## {category}\n")
         for task in tasks:
