@@ -109,8 +109,8 @@ class KanbanColumn(Vertical):
     }
     """
 
-    def __init__(self, category: str, **kwargs):
-        self.category = category
+    def __init__(self, column: str, **kwargs):
+        self.column = column
         super().__init__(**kwargs)
 
     def compose(self) -> ComposeResult:
@@ -152,7 +152,7 @@ class KanbanBoard(Vertical):
 
     def __init__(self, board: Board, **kwargs):
         self.board = board
-        self.columns: dict[str, KanbanColumn] = {}
+        self.kanban_columns: dict[str, KanbanColumn] = {}
         self._headers: dict[str, ColumnHeader] = {}
         self.selected_task_index = 0
         super().__init__(**kwargs)
@@ -161,21 +161,21 @@ class KanbanBoard(Vertical):
         yield TitleBar("TUIDO - TUI based TODO list manage Board")
 
         # 获取栏目列表
-        categories = self.board.get_all_categories()
+        columns = self.board.get_all_columns()
 
         # Header row with column titles
         with Horizontal(classes="header-row"):
-            for category in categories:
-                header = ColumnHeader(category)
-                self._headers[category] = header
+            for column in columns:
+                header = ColumnHeader(column)
+                self._headers[column] = header
                 yield header
 
         # Columns row with task content
         with Horizontal(classes="columns-row"):
-            for category in categories:
-                column = KanbanColumn(category)
-                self.columns[category] = column
-                yield column
+            for column in columns:
+                kanban_column = KanbanColumn(column)
+                self.kanban_columns[column] = kanban_column
+                yield kanban_column
 
     def on_mount(self) -> None:
         """Initialize the board with tasks after mounting."""
@@ -184,29 +184,29 @@ class KanbanBoard(Vertical):
     def refresh_board(self) -> None:
         """Refresh the board display."""
         # 获取当前栏目顺序
-        categories = self.board.get_all_categories()
+        columns = self.board.get_all_columns()
 
         # 检查是否需要重新创建栏目（栏目数量或顺序变化）
-        current_categories = list(self.columns.keys())
-        if current_categories != categories:
+        current_columns = list(self.kanban_columns.keys())
+        if current_columns != columns:
             # 需要重新构建UI
             self._rebuild_columns()
             return
 
         # Clear all columns
-        for column in self.columns.values():
+        for column in self.kanban_columns.values():
             column.clear_tasks()
 
         # Add tasks to appropriate columns
-        for category, tasks in self.board.columns.items():
-            if category in self.columns:
+        for column, tasks in self.board.columns.items():
+            if column in self.kanban_columns:
                 for task in tasks:
-                    self.columns[category].add_task(task)
+                    self.kanban_columns[column].add_task(task)
 
         self.update_selection()
 
     def _rebuild_columns(self) -> None:
-        """Rebuild column widgets when categories change."""
+        """Rebuild column widgets when columns change."""
         # 保存当前选中的任务
         selected_task = None
         all_cards = self.get_all_task_cards()
@@ -214,7 +214,7 @@ class KanbanBoard(Vertical):
             selected_task = all_cards[self.selected_task_index].task_obj
 
         # 清除现有栏目
-        self.columns.clear()
+        self.kanban_columns.clear()
         self._headers.clear()
 
         # 重新挂载（通过重新compose）
@@ -223,31 +223,31 @@ class KanbanBoard(Vertical):
             child.remove()
 
         # 重新compose
-        categories = self.board.get_all_categories()
+        columns = self.board.get_all_columns()
 
         # Header row - 先创建并挂载容器
         header_row = Horizontal(classes="header-row")
         self.mount(header_row)
         # 再挂载子组件（容器已挂载到DOM）
-        for category in categories:
-            header = ColumnHeader(category)
-            self._headers[category] = header
+        for column in columns:
+            header = ColumnHeader(column)
+            self._headers[column] = header
             header_row.mount(header)
 
         # Columns row - 先创建并挂载容器
         columns_row = Horizontal(classes="columns-row")
         self.mount(columns_row)
         # 再挂载子组件（容器已挂载到DOM）
-        for category in categories:
-            column = KanbanColumn(category)
-            self.columns[category] = column
-            columns_row.mount(column)
+        for column in columns:
+            kanban_column = KanbanColumn(column)
+            self.kanban_columns[column] = kanban_column
+            columns_row.mount(kanban_column)
 
         # 重新填充任务
-        for category, tasks in self.board.columns.items():
-            if category in self.columns:
+        for column, tasks in self.board.columns.items():
+            if column in self.kanban_columns:
                 for task in tasks:
-                    self.columns[category].add_task(task)
+                    self.kanban_columns[column].add_task(task)
 
         # 恢复选中状态
         if selected_task:
@@ -262,17 +262,17 @@ class KanbanBoard(Vertical):
     def get_all_task_cards(self) -> list[TaskCard]:
         """Get all task cards across all columns."""
         cards = []
-        categories = self.board.get_all_categories()
-        for category in categories:
-            if category in self.columns:
-                for child in self.columns[category].children:
+        columns = self.board.get_all_columns()
+        for column in columns:
+            if column in self.kanban_columns:
+                for child in self.kanban_columns[column].children:
                     if isinstance(child, TaskCard):
                         cards.append(child)
         return cards
 
     def get_visible_columns(self) -> list[str]:
         """Get columns in order."""
-        return self.board.get_all_categories()
+        return self.board.get_all_columns()
 
     def update_selection(self) -> None:
         """Update the visual selection state."""
@@ -288,37 +288,37 @@ class KanbanBoard(Vertical):
             all_cards[self.selected_task_index].scroll_visible()
 
     def get_selected_task(self) -> tuple[TaskCard | None, str | None]:
-        """Get the currently selected task card and its category."""
+        """Get the currently selected task card and its column."""
         all_cards = self.get_all_task_cards()
         if not all_cards or not (0 <= self.selected_task_index < len(all_cards)):
             return None, None
 
         card = all_cards[self.selected_task_index]
-        return card, card.task_obj.category
+        return card, card.task_obj.column
 
     def move_task(self, direction: str) -> None:
         """Move task between columns or reorder within column with Shift+Direction."""
-        card, current_category = self.get_selected_task()
-        if not card or not current_category:
+        card, current_column = self.get_selected_task()
+        if not card or not current_column:
             return
 
         if direction in ("left", "right"):
             # Move between columns
             columns = self.get_visible_columns()
-            if current_category not in columns:
+            if current_column not in columns:
                 return
 
-            current_idx = columns.index(current_category)
-            new_category = None
+            current_idx = columns.index(current_column)
+            new_column = None
 
             if direction == "left" and current_idx > 0:
-                new_category = columns[current_idx - 1]
+                new_column = columns[current_idx - 1]
             elif direction == "right" and current_idx < len(columns) - 1:
-                new_category = columns[current_idx + 1]
+                new_column = columns[current_idx + 1]
 
-            if new_category:
-                # Move task to new category in board data
-                self.board.move_task_to_category(card.task_obj, new_category)
+            if new_column:
+                # Move task to new column in board data
+                self.board.move_task_to_column(card.task_obj, new_column)
 
                 # Refresh the entire board
                 self.refresh_board()
@@ -368,28 +368,28 @@ class KanbanBoard(Vertical):
 
     def _navigate_horizontal(self, direction: str, all_cards: list[TaskCard]) -> None:
         """Handle left/right navigation between columns."""
-        card, current_category = self.get_selected_task()
-        if not card or not current_category:
+        card, current_column = self.get_selected_task()
+        if not card or not current_column:
             return
 
         columns = self.get_visible_columns()
-        if current_category not in columns:
+        if current_column not in columns:
             return
 
-        idx = columns.index(current_category)
+        idx = columns.index(current_column)
         offset = -1 if direction == "left" else 1
         target_idx = idx + offset
 
         if not (0 <= target_idx < len(columns)):
             return
 
-        target_category = columns[target_idx]
-        if target_category not in self.columns or self.columns[target_category].get_task_count() == 0:
+        target_column = columns[target_idx]
+        if target_column not in self.kanban_columns or self.kanban_columns[target_column].get_task_count() == 0:
             return
 
         # Find first task of target column
         for i, c in enumerate(all_cards):
-            if c.task_obj.category == target_category:
+            if c.task_obj.column == target_column:
                 self.selected_task_index = i
                 break
 
@@ -500,7 +500,7 @@ class TuidoApp(App):
 - ←/h - Previous column
 - →/l - Next column
 
-## Move Tasks (Between Categories)
+## Move Tasks (Between columns)
 - Shift+← / Shift+H - Move task to left column
 - Shift+→ / Shift+L - Move task to right column
 

@@ -22,7 +22,7 @@ tuido/
 
 ## 数据格式 (TODO.md)
 
-**栏目(Category)是动态的，由二级标题决定**。TODO.md 中的每个 `## ` 标题成为一个看板列，按文件中出现的顺序展示。
+**栏目(Column)是动态的，由二级标题决定**。TODO.md 中的每个 `## ` 标题成为一个看板列，按文件中出现的顺序展示。
 
 ```markdown
 ## Todo
@@ -50,9 +50,9 @@ tuido/
 ## 核心类
 
 ### models.py
-- `Task`: 标题、**category(栏目名称)**、标签列表、优先级、行号
-  - `category`: 字符串，对应 TODO.md 中的二级标题
-- `Board`: 任务列表、**栏目顺序列表(categories)**、按栏目获取任务、重排序任务
+- `Task`: 标题、**column(栏目名称)**、标签列表、优先级、行号
+  - `column`: 字符串，对应 TODO.md 中的二级标题
+- `Board`: 任务列表、**栏目顺序列表(columns)**、按栏目获取任务、重排序任务
 
 ### ui.py
 - `TaskCard`: 单个任务组件 (**重要: 使用 `task_obj`, 不要用 `task`**)

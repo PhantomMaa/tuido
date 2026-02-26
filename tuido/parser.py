@@ -79,7 +79,7 @@ def parse_front_matter(lines: list[str]) -> tuple[dict, int]:
 def parse_todo_file(file_path: Path) -> Board:
     """Parse a TODO.md file and return a Board.
     
-    栏目(Category)从二级标题(##)读取，按文件中的顺序展示。
+    栏目(Column)从二级标题(##)读取，按文件中的顺序展示。
     """
     board = Board(title="TODO Board")
 
@@ -95,7 +95,7 @@ def parse_todo_file(file_path: Path) -> Board:
     settings, start_idx = parse_front_matter(lines)
     board.settings = settings
 
-    current_category = None
+    current_column = None
 
     for line_num, line in enumerate(lines[start_idx:], start_idx + 1):
         stripped = line.strip()
@@ -105,33 +105,33 @@ def parse_todo_file(file_path: Path) -> Board:
 
         # Check for section headers (二级标题 ##)
         if stripped.startswith("## "):
-            category_name = stripped[3:].strip()
-            current_category = category_name
+            column_name = stripped[3:].strip()
+            current_column = column_name
             # 确保栏目存在（保留空栏目）
-            if category_name not in board.columns:
-                board.columns[category_name] = []
+            if column_name not in board.columns:
+                board.columns[column_name] = []
             continue
 
         # Only parse lines starting with '- '
         if stripped.startswith("- "):
             # 如果没有当前栏目，使用默认值
-            if current_category is None:
-                current_category = "Todo"
-                if current_category not in board.columns:
-                    board.columns[current_category] = []
+            if current_column is None:
+                current_column = "Todo"
+                if current_column not in board.columns:
+                    board.columns[current_column] = []
             
             content = stripped[2:].strip()
             metadata = parse_task_content(content)
 
             task = Task(
                 title=metadata["title"],
-                category=current_category,
+                column=current_column,
                 tags=metadata["tags"],
                 priority=metadata["priority"],
                 line_number=line_num,
                 raw_text=line.rstrip(),
             )
-            board.columns[current_category].append(task)
+            board.columns[current_column].append(task)
 
     # 如果没有解析到任何栏目，使用默认值
     if not board.columns:
@@ -168,9 +168,9 @@ def save_todo_file(file_path: Path, board: Board) -> None:
         return f"- {content}"
 
     # 按栏目顺序写入（board.columns 是有序 dict）
-    for category, tasks in board.columns.items():
+    for column, tasks in board.columns.items():
         # 即使栏目没有任务也写入空栏目（保留栏目结构）
-        lines.append(f"## {category}\n")
+        lines.append(f"## {column}\n")
         for task in tasks:
             lines.append(format_task(task) + "\n")
         lines.append("\n")
