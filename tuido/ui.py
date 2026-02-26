@@ -29,7 +29,6 @@ class TaskCard(Static):
     }
     TaskCard.subtask {
         margin-left: 2;
-        border-left: solid $surface-lighten-2;
     }
     """
 
@@ -48,14 +47,7 @@ class TaskCard(Static):
     def render_task(self) -> Text:
         """Render task as Rich text."""
         lines = []
-
-        # Title with subtask indicator
-        title = self.task_obj.title
-        if self.is_subtask:
-            # 子任务使用不同前缀
-            lines.append(f"[dim]└─[/dim] [bold]{title}[/bold]")
-        else:
-            lines.append(f"[bold]{title}[/bold]")
+        lines.append(self.task_obj.title)
 
         # Metadata line
         meta_parts = []
