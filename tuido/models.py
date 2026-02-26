@@ -64,19 +64,10 @@ class Board:
         优先使用 self.categories 中定义的顺序，
         对于没有在 categories 列表中的任务，按出现顺序追加。
         """
-        # 从预设顺序中获取有任务的栏目
-        result = []
-        seen = set()
+        result = list(self.categories)
 
-        for cat in self.categories:
-            if any(t.category == cat for t in self.tasks):
-                result.append(cat)
-                seen.add(cat)
-
-        # 追加未在预设顺序中的栏目（按任务出现顺序）
         for task in self.tasks:
-            if task.category not in seen:
+            if task.category not in result:
                 result.append(task.category)
-                seen.add(task.category)
 
-        return result if result else ["Todo", "In Progress", "Done"]
+        return result or ["Todo", "In Progress", "Done"]
