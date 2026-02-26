@@ -239,7 +239,6 @@ class FeishuTable:
 
                 # 处理每条记录
                 for item in items:
-                    logger.info(f"正在处理第 {processed_count + 1} 条数据...")
                     # 检查是否达到处理限制
                     if limit and processed_count >= limit:
                         logger.info(f"已达到处理限制 {limit}，停止处理")

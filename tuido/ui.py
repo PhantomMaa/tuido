@@ -57,7 +57,8 @@ class TaskCard(Static):
 
         # Project name (for global view) - shown in blue
         if self.task_obj.project:
-            meta_parts.append(f"[blue bold]「{escape(self.task_obj.project)}」[/blue bold]")
+            # 只需转义左方括号
+            meta_parts.append(f"[blue bold]\\[{self.task_obj.project}][/blue bold]")
 
         if self.task_obj.priority:
             priority_colors = {
@@ -602,10 +603,18 @@ class GlobalViewApp(App):
         Binding("down", "navigate('down')", "Next", show=False),
         Binding("left", "navigate('left')", "Left Col", show=False),
         Binding("right", "navigate('right')", "Right Col", show=False),
+        Binding("shift+up", "move_task('up')", "Move Up", show=False),
+        Binding("shift+down", "move_task('down')", "Move Down", show=False),
+        Binding("shift+left", "move_task('left')", "Move Left", show=False),
+        Binding("shift+right", "move_task('right')", "Move Right", show=False),
         Binding("h", "navigate('left')", "Left", show=False),
         Binding("j", "navigate('down')", "Down", show=False),
         Binding("k", "navigate('up')", "Up", show=False),
         Binding("l", "navigate('right')", "Right", show=False),
+        Binding("shift+k", "move_task('up')", "Move Up", show=False),
+        Binding("shift+j", "move_task('down')", "Move Down", show=False),
+        Binding("shift+h", "move_task('left')", "Move Left", show=False),
+        Binding("shift+l", "move_task('right')", "Move Right", show=False),
         Binding("?", "help", "Help"),
         Binding("t", "change_theme", "Theme"),
     ]
@@ -652,6 +661,12 @@ class GlobalViewApp(App):
 - ↓/j - Next task
 - ←/h - Previous column
 - →/l - Next column
+
+## Move Tasks (Disabled in Global View)
+- Shift+← / Shift+H - Move task to left column (disabled)
+- Shift+→ / Shift+L - Move task to right column (disabled)
+- Shift+↑ / Shift+K - Move task up (disabled)
+- Shift+↓ / Shift+J - Move task down (disabled)
 
 ## Actions
 - t - Change theme
