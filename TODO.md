@@ -9,8 +9,8 @@ theme: textual-dark
 
 ## In Progress
 - 支持层级展示 !P1
-  - 读取逻辑
   - 展示逻辑
+  - 读取逻辑
 
 ## Done
 - 支持切换主题 #ui

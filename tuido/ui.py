@@ -522,9 +522,10 @@ class TuidoApp(App):
 - Shift+← / Shift+H - Move task to left column
 - Shift+→ / Shift+L - Move task to right column
 
-## Reorder Tasks (Within Column)
+## Reorder Tasks (Within Column / Parent)
 - Shift+↑ / Shift+K - Move task up
 - Shift+↓ / Shift+J - Move task down
+  - Works for both top-level tasks and subtasks
 
 ## Actions
 - r - Refresh from file

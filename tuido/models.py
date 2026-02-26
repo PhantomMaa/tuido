@@ -47,8 +47,16 @@ class Board:
         return result
 
     def reorder_task(self, task: Task, direction: str) -> bool:
-        """Reorder a task within its column. Returns True if reordered."""
-        tasks = self.columns.get(task.column, [])
+        """Reorder a task within its column or parent. Returns True if reordered."""
+        # 确定任务所在的列表（栏目列表或父任务的子任务列表）
+        if task.level == 0:
+            # 顶级任务：在 column 列表中
+            tasks = self.columns.get(task.column, [])
+        else:
+            if task.parent is None:
+                return False
+            
+            tasks = task.parent.subtasks
 
         try:
             current_idx = tasks.index(task)
