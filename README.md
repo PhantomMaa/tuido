@@ -12,6 +12,7 @@ A TUI (Terminal User Interface) Kanban board for TODO.md files.
 - 🔃 Reorder tasks within column
 - 🏷️ Support for tags (#tag), priority (!P0/!P1/!P2/!P3/!P4)
 - 💾 Save changes back to TODO.md
+- 🌍 **Global view** - View all projects' tasks from Feishu table
 
 ## Installation
 
@@ -34,6 +35,9 @@ tuido path/to/TODO.md
 
 # Create a sample TODO.md file
 tuido . --create
+
+# View all projects from Feishu (global view)
+tuido --global-view
 ```
 
 ## Keyboard Shortcuts
@@ -97,6 +101,29 @@ The column order follows the order they appear in the file.
 - `!P0` / `!P1` / `!P2` / `!P3` / `!P4` - Priority (P0 = highest, P4 = lowest)
 
 Task status is determined by which section (`## Todo`, `## In Progress`, etc.) it belongs to.
+
+## Global View
+
+View tasks from all projects in a single read-only interface:
+
+```bash
+# Show global view from Feishu table
+tuido --global-view
+```
+
+**Requirements for global view:**
+
+Add the following to your `.env` file:
+
+```bash
+BOT_APP_ID=your_bot_app_id
+BOT_APP_SECRET=your_bot_app_secret
+GLOBAL_VIEW_TABLE_APP_TOKEN=your_table_app_token
+GLOBAL_VIEW_TABLE_ID=your_table_id
+GLOBAL_VIEW_TABLE_VIEW_ID=your_table_view_id
+```
+
+The global view displays tasks from all projects organized by status columns (Todo, In Progress, Review, Blocked, Done).
 
 ## Requirements
 

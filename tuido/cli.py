@@ -4,10 +4,10 @@ import argparse
 from pathlib import Path
 
 from .parser import parse_todo_file
-from .ui import TuidoApp
-from .feishu import FeishuTable
+from .ui import TuidoApp, GlobalViewApp
+from .feishu import FeishuTable, fetch_global_tasks
 from .models import Board, FeishuTask
-from .envs import bot_app_id, bot_app_secret
+from .envs import bot_app_id, bot_app_secret, global_view_table_app_token, global_view_table_id, global_view_table_view_id
 
 
 def find_todo_file(path: Path) -> Path:
@@ -40,8 +40,9 @@ def push_to_feishu(board: Board, project_name: str) -> bool:
 
     table_app_token = remote_config.get("feishu_table_app_token")
     table_id = remote_config.get("feishu_table_id")
+    table_view_id = remote_config.get("feishu_table_view_id")
 
-    if not table_app_token or not table_id:
+    if not table_app_token or not table_id or not table_view_id:
         print("Error: Feishu table configuration not found in TODO.md front matter.")
         print("Please add the following to your TODO.md:")
         print(
@@ -49,6 +50,7 @@ def push_to_feishu(board: Board, project_name: str) -> bool:
 remote:
   feishu_table_app_token: your_app_token
   feishu_table_id: your_table_id
+  feishu_table_view_id: your_table_view_id
 ---"""
         )
         return False
@@ -102,7 +104,7 @@ remote:
 
     # Initialize Feishu bot and push
     try:
-        bot = FeishuTable(bot_app_id, bot_app_secret, table_app_token, table_id)
+        bot = FeishuTable(bot_app_id, bot_app_secret, table_app_token, table_id, table_view_id)
         success = bot.batch_create(records)
 
         if success:
@@ -143,6 +145,12 @@ def main():
         action="store_true",
         help="Push tasks to Feishu table (requires remote config in TODO.md)",
     )
+    parser.add_argument(
+        "--global-view",
+        action="store_true",
+        dest="global_view",
+        help="Show global view of all projects from Feishu table (requires GLOBAL_VIEW_* env vars)",
+    )
     args = parser.parse_args()
 
     # Resolve the path
@@ -176,6 +184,46 @@ theme: textual-dark
         todo_file.write_text(sample_content)
         print(f"Created sample TODO.md at {todo_file}")
         return
+
+    # Handle --global-view command
+    if args.global_view:
+        # Check required env vars
+        if not global_view_table_app_token:
+            print("Error: GLOBAL_VIEW_TABLE_APP_TOKEN environment variable not set.")
+            print("Please set it in your .env file.")
+            return 1
+        if not global_view_table_id:
+            print("Error: GLOBAL_VIEW_TABLE_ID environment variable not set.")
+            print("Please set it in your .env file.")
+            return 1
+        if not global_view_table_view_id:
+            print("Error: GLOBAL_VIEW_TABLE_VIEW_ID environment variable not set.")
+            print("Please set it in your .env file.")
+            return 1
+
+        # Fetch tasks from Feishu
+        try:
+            print("Fetching global tasks from Feishu...")
+            records = fetch_global_tasks(
+                bot_app_id,
+                bot_app_secret,
+                global_view_table_app_token,
+                global_view_table_id,
+                global_view_table_view_id,
+            )
+            print(f"Fetched {len(records)} tasks from Feishu.")
+
+            # Convert to Board
+            board = Board.from_feishu_records(records)
+
+            # Launch the global view TUI
+            app = GlobalViewApp(board)
+            app.run()
+            return 0
+
+        except Exception as e:
+            print(f"Error fetching global tasks: {e}")
+            return 1
 
     # Check if file exists
     if not todo_file.exists():

@@ -3,6 +3,7 @@ theme: textual-dark
 remote:
   feishu_table_app_token: FcS8bHGgRatZFZsrlDrl1nDOgeg
   feishu_table_id: tblY5rSJzlWRPRoU
+  feishu_table_view_id: vewyMDUelr
 ---
 
 # TUIDO

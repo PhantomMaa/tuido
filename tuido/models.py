@@ -118,3 +118,75 @@ class Board:
         for subtask in task.subtasks:
             subtask.column = new_column
             self._update_subtask_columns(subtask, new_column)
+
+    @classmethod
+    def from_feishu_records(cls, records: list[dict[str, str]]) -> "Board":
+        """Create a Board from Feishu table records.
+
+        Args:
+            records: List of records from Feishu, each containing Task, Project, Status, Tags, Priority
+
+        Returns:
+            Board instance with tasks organized by status (column)
+        """
+        # Group tasks by status (column)
+        columns_data: dict[str, list[Task]] = {}
+
+        for record in records:
+            # Extract fields with defaults
+            title = record.get("Task", "")
+            project = record.get("Project", "")
+            status = record.get("Status", "Todo")
+            tags_str = record.get("Tags", "")
+            priority = record.get("Priority", "")
+
+            # Skip empty tasks
+            if not title:
+                continue
+
+            # Parse tags
+            tags: list[str] = []
+            if tags_str:
+                if isinstance(tags_str, list):
+                    tags = tags_str
+                else:
+                    tags = [t.strip() for t in str(tags_str).split(",") if t.strip()]
+
+            # Create task - for global view, we prepend project name to title
+            full_title = f"[{project}] {title}" if project else title
+
+            task = Task(
+                title=full_title,
+                column=status,
+                tags=tags,
+                priority=priority if priority else None,
+            )
+
+            # Add to appropriate column
+            if status not in columns_data:
+                columns_data[status] = []
+            columns_data[status].append(task)
+
+        # Define column order - common status values
+        # We'll keep the order: Todo -> In Progress -> Review -> Blocked -> Done
+        # Any other statuses will be appended after these
+        predefined_order = ["Todo", "In Progress", "Review", "Blocked", "Done"]
+
+        # Build ordered columns dict
+        ordered_columns: dict[str, list[Task]] = {}
+
+        # First add predefined columns that exist in data
+        for status in predefined_order:
+            if status in columns_data:
+                ordered_columns[status] = columns_data[status]
+
+        # Then add any other columns not in predefined order
+        for status in columns_data:
+            if status not in ordered_columns:
+                ordered_columns[status] = columns_data[status]
+
+        return cls(
+            title="Global Task View",
+            columns=ordered_columns,
+            settings={"theme": "dracula", "read_only": True},
+        )

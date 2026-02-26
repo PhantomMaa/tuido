@@ -179,6 +179,30 @@ if current_status in columns:
 
 刷新看板后，新栏目会自动显示。
 
+## 全局视图
+
+使用 `--global-view` 命令查看所有项目的任务：
+
+```bash
+# 查看全局任务列表（从飞书读取）
+tuido --global-view
+```
+
+**环境变量配置：**
+需要在 `.env` 文件中配置以下变量：
+```bash
+BOT_APP_ID=xxx
+BOT_APP_SECRET=xxx
+GLOBAL_VIEW_TABLE_APP_TOKEN=xxx
+GLOBAL_VIEW_TABLE_ID=xxx
+GLOBAL_VIEW_TABLE_VIEW_ID=xxx
+```
+
+**特性：**
+- 只读视图，不支持编辑和移动任务
+- 任务标题显示格式：`[项目名] 任务名`
+- 按状态自动分栏（Todo, In Progress, Review, Blocked, Done）
+
 ## 飞书同步
 
 使用 `--push` 命令将任务同步到飞书多维表格：
