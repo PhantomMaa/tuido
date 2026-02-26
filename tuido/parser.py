@@ -99,7 +99,7 @@ def parse_todo_file(file_path: Path) -> Board:
     current_column = None
     parent_stack: list[Task] = []  # 用于跟踪父任务层级
 
-    for line_num, line in enumerate(lines[start_idx:], start_idx + 1):
+    for _, line in enumerate(lines[start_idx:], start_idx + 1):
         stripped = line.strip()
 
         if not stripped:
@@ -136,8 +136,6 @@ def parse_todo_file(file_path: Path) -> Board:
                 column=current_column,
                 tags=metadata["tags"],
                 priority=metadata["priority"],
-                line_number=line_num,
-                raw_text=line.rstrip(),
                 level=level,
             )
             
@@ -213,5 +211,7 @@ def save_todo_file(file_path: Path, board: Board) -> None:
             lines.extend(write_task_with_subtasks(task))
         lines.append("\n")
 
+    # Join lines and strip trailing whitespace to avoid extra blank lines at end
+    content = "".join(lines).rstrip()
     with open(file_path, "w", encoding="utf-8") as f:
-        f.writelines(lines)
+        f.write(content)

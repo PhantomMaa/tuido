@@ -53,17 +53,22 @@ def main():
     # Create sample file if requested and doesn't exist
     if args.create and not todo_file.exists():
         sample_content = """# TUIDO
+---
+theme: textual-dark
+---
 
 ## Todo
-- Implement user authentication #feature !high
+- Implement user authentication #feature !P1
 - Write unit tests #testing
+  - backend tests #testing
+  - frontend tests #testing
 - Update documentation #docs
 
 ## In Progress
 - Design database schema #backend
 
 ## Blocked
-- Deploy to production #devops !critical (waiting for approval)
+- Deploy to production #devops !P0
 
 ## Done
 - Initial project setup #setup

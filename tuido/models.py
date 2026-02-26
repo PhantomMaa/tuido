@@ -5,19 +5,25 @@ from typing import Optional
 
 
 @dataclass
+class FeishuTask:
+    task: str
+    project: str
+    status: str
+    tags: list[str]
+    priority: str
+
+
+@dataclass
 class Task:
     """Represents a single task."""
 
     title: str
     column: str = "Todo"  # 所属栏目名称（对应二级标题）
-    description: str = ""
     tags: list[str] = field(default_factory=list)
     priority: Optional[str] = None
-    line_number: int = 0  # Track line number for file updates
-    raw_text: str = ""  # Original raw text
     level: int = 0  # 层级深度，0为父任务，1+为子任务
-    parent: Optional['Task'] = None  # 父任务引用
-    subtasks: list['Task'] = field(default_factory=list)  # 子任务列表
+    parent: Optional["Task"] = None  # 父任务引用
+    subtasks: list["Task"] = field(default_factory=list)  # 子任务列表
 
     def __str__(self) -> str:
         return f"[{self.column}] {self.title}"
@@ -55,7 +61,7 @@ class Board:
         else:
             if task.parent is None:
                 return False
-            
+
             tasks = task.parent.subtasks
 
         try:
@@ -80,7 +86,7 @@ class Board:
 
     def move_task_to_column(self, task: Task, new_column: str, insert_at: str = "end") -> bool:
         """Move a task to a different column. Returns True if moved.
-        
+
         Args:
             task: The task to move.
             new_column: The target column name.
@@ -101,11 +107,11 @@ class Board:
             self.columns[new_column].insert(0, task)
         else:
             self.columns[new_column].append(task)
-        
+
         # 递归更新所有子任务的 column 属性
         self._update_subtask_columns(task, new_column)
         return True
-    
+
     def _update_subtask_columns(self, task: Task, new_column: str) -> None:
         """递归更新子任务的 column 属性。"""
         for subtask in task.subtasks:
