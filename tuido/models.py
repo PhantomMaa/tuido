@@ -25,6 +25,7 @@ class Task:
     level: int = 0  # 层级深度，0为父任务，1+为子任务
     parent: Optional["Task"] = None  # 父任务引用
     subtasks: list["Task"] = field(default_factory=list)  # 子任务列表
+    project: Optional[str] = None  # 项目名称（用于全局视图）
 
     def __str__(self) -> str:
         return f"[{self.column}] {self.title}"
@@ -152,14 +153,13 @@ class Board:
                 else:
                     tags = [t.strip() for t in str(tags_str).split(",") if t.strip()]
 
-            # Create task - for global view, we prepend project name to title
-            full_title = f"[{project}] {title}" if project else title
-
+            # Create task - project is stored separately for display in global view
             task = Task(
-                title=full_title,
+                title=title,
                 column=status,
                 tags=tags,
                 priority=priority if priority else None,
+                project=project if project else None,
             )
 
             # Add to appropriate column

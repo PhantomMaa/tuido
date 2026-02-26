@@ -54,6 +54,11 @@ class TaskCard(Static):
 
         # Metadata line
         meta_parts = []
+
+        # Project name (for global view) - shown in blue
+        if self.task_obj.project:
+            meta_parts.append(f"[blue bold]「{escape(self.task_obj.project)}」[/blue bold]")
+
         if self.task_obj.priority:
             priority_colors = {
                 "P0": "red",
