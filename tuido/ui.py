@@ -321,6 +321,14 @@ class KanbanBoard(Vertical):
             return
 
         if direction in ("left", "right"):
+            # Check if this is a subtask - subtasks cannot be moved independently
+            if card.task_obj.level > 0:
+                # Get the app to show notification
+                app = self.app
+                if app:
+                    app.notify("Subtasks cannot be moved independently. They move with their parent task.", severity="warning", timeout=3)
+                return
+
             # Move between columns
             columns = self.get_visible_columns()
             if current_column not in columns:
