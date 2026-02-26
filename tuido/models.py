@@ -78,8 +78,14 @@ class Board:
         """Get all columns in order."""
         return list(self.columns.keys()) or ["Todo", "In Progress", "Done"]
 
-    def move_task_to_column(self, task: Task, new_column: str) -> bool:
-        """Move a task to a different column. Returns True if moved."""
+    def move_task_to_column(self, task: Task, new_column: str, insert_at: str = "end") -> bool:
+        """Move a task to a different column. Returns True if moved.
+        
+        Args:
+            task: The task to move.
+            new_column: The target column name.
+            insert_at: Where to insert the task in the new column. "start" for beginning, "end" for end.
+        """
         if new_column not in self.columns:
             return False
 
@@ -91,7 +97,10 @@ class Board:
         old_tasks.remove(task)
         # Add to new column
         task.column = new_column
-        self.columns[new_column].append(task)
+        if insert_at == "start":
+            self.columns[new_column].insert(0, task)
+        else:
+            self.columns[new_column].append(task)
         
         # 递归更新所有子任务的 column 属性
         self._update_subtask_columns(task, new_column)

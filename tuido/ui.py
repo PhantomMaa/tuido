@@ -344,7 +344,10 @@ class KanbanBoard(Vertical):
 
             if new_column:
                 # Move task to new column in board data
-                self.board.move_task_to_column(card.task_obj, new_column)
+                # Left move: insert at end of left column
+                # Right move: insert at start of right column
+                insert_at = "end" if direction == "left" else "start"
+                self.board.move_task_to_column(card.task_obj, new_column, insert_at)
 
                 # Refresh the entire board
                 self.refresh_board()
