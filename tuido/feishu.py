@@ -318,4 +318,5 @@ def fetch_global_tasks(
             return ", ".join(map(str, value)) if value else ""
         return value if value is not None else ""
 
+    field_names.append("record_id")  # 确保 record_id 也被包含在结果中
     return [{field: _normalize(record.get(field)) for field in field_names} for record in records]

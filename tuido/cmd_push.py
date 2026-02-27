@@ -212,6 +212,7 @@ remote:
             project_name,
         )
         print(f"Found {len(remote_records)} existing records.")
+        print(f"Found records: {remote_records}")
     except Exception as e:
         print(f"Error fetching existing records: {e}")
         return False
@@ -242,10 +243,49 @@ remote:
         print("已取消推送。")
         return True
 
-    # Convert to Feishu records format
-    # Note: Tags should be an array for MultiSelect field type
-    records = []
-    for task in tasks_to_push:
+    # Initialize Feishu bot
+    try:
+        bot = FeishuTable(api_endpoint, config.bot_app_id, config.bot_app_secret, feishu_table_app_token, feishu_table_id)
+    except Exception as e:
+        print(f"Error initializing Feishu bot: {e}")
+        return False
+
+    success_count = 0
+    fail_count = 0
+
+    # 1. Create new tasks using batch_create
+    if new_tasks:
+        records = []
+        for task in new_tasks:
+            fields = {
+                "Task": task.task,
+                "Project": task.project,
+                "Status": task.status,
+                "Tags": task.tags,
+                "Priority": task.priority,
+            }
+            record = {"fields": fields}
+            records.append(record)
+
+        try:
+            if bot.batch_create(records):
+                print(f"✓ 成功创建 {len(records)} 个新任务")
+                success_count += len(records)
+            else:
+                print(f"✗ 创建 {len(records)} 个新任务失败")
+                fail_count += len(records)
+        except Exception as e:
+            print(f"✗ 创建新任务时出错: {e}")
+            fail_count += len(records)
+
+    # 2. Update modified tasks using update API with record_id
+    for task, remote_record in modified_tasks:
+        record_id = remote_record.get("record_id")
+        if not record_id:
+            print(f"✗ 无法更新任务 '{task.task}': 缺少 record_id")
+            fail_count += 1
+            continue
+
         fields = {
             "Task": task.task,
             "Project": task.project,
@@ -253,23 +293,25 @@ remote:
             "Tags": task.tags,
             "Priority": task.priority,
         }
-        record = {"fields": fields}
-        records.append(record)
 
-    # Initialize Feishu bot and push
-    try:
-        bot = FeishuTable(api_endpoint, config.bot_app_id, config.bot_app_secret, feishu_table_app_token, feishu_table_id)
-        success = bot.batch_create(records)
+        try:
+            if bot.update(feishu_table_app_token, feishu_table_id, record_id, fields):
+                print(f"✓ 更新任务: {task.task}")
+                success_count += 1
+            else:
+                print(f"✗ 更新任务失败: {task.task}")
+                fail_count += 1
+        except Exception as e:
+            print(f"✗ 更新任务 '{task.task}' 时出错: {e}")
+            fail_count += 1
 
-        if success:
-            print(f"Successfully pushed {len(records)} tasks to Feishu table.")
-            return True
-        else:
-            print("Failed to push tasks to Feishu table.")
-            return False
-    except Exception as e:
-        print(f"Error pushing to Feishu: {e}")
-        return False
+    # Summary
+    if fail_count == 0:
+        print(f"\n✅ 成功推送所有 {success_count} 个任务到飞书表格。")
+        return True
+    else:
+        print(f"\n⚠️ 推送完成: {success_count} 个成功, {fail_count} 个失败。")
+        return fail_count == 0
 
 
 def run_push_command(board: Board, todo_file: Path, dry_run: bool = False) -> int:
