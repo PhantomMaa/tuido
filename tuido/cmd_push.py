@@ -1,28 +1,11 @@
-"""Command line interface for tuido."""
+"""Push command implementation for tuido."""
 
-import argparse
 from pathlib import Path
 from typing import Any
 
-from .parser import parse_todo_file
-from .ui import TuidoApp, GlobalViewApp
-from .feishu import FeishuTable, fetch_global_tasks, fetch_existing_tasks
-from .models import Board, FeishuTask
-from .config import load_global_config
-
-
-def find_todo_file(path: Path) -> Path:
-    """Find TODO.md file in the given path."""
-    if path.is_dir():
-        # Look for TODO.md or TODO.md in the directory
-        for filename in ["TODO.md", "TODO.MD", "todo.md", "Todo.md"]:
-            todo_file = path / filename
-            if todo_file.exists():
-                return todo_file
-        # Default to TODO.md if not found
-        return path / "TODO.md"
-    else:
-        return path
+from tuido.feishu import FeishuTable, fetch_project_tasks
+from tuido.models import Board, FeishuTask
+from tuido.config import load_global_config
 
 
 def normalize_tags(tags: list[str]) -> str:
@@ -39,7 +22,10 @@ def task_matches_record(task: FeishuTask, record: dict[str, Any]) -> bool:
         task.task == record.get("Task", "")
         and task.project == record.get("Project", "")
         and task.status == record.get("Status", "")
-        and normalize_tags(task.tags) == normalize_tags(record.get("Tags", []) if isinstance(record.get("Tags"), list) else record.get("Tags", "").split(", ") if record.get("Tags") else [])
+        and normalize_tags(task.tags)
+        == normalize_tags(
+            record.get("Tags", []) if isinstance(record.get("Tags"), list) else record.get("Tags", "").split(", ") if record.get("Tags") else []
+        )
         and task.priority == record.get("Priority", "")
     )
 
@@ -113,7 +99,9 @@ def print_diff_preview(
             # Show field differences
             if task.status != remote.get("Status", ""):
                 print(f"     状态: {remote.get('Status', '')} → {task.status}")
-            if normalize_tags(task.tags) != normalize_tags(remote.get("Tags", []) if isinstance(remote.get("Tags"), list) else remote.get("Tags", "").split(", ") if remote.get("Tags") else []):
+            if normalize_tags(task.tags) != normalize_tags(
+                remote.get("Tags", []) if isinstance(remote.get("Tags"), list) else remote.get("Tags", "").split(", ") if remote.get("Tags") else []
+            ):
                 old_tags = remote.get("Tags", "")
                 new_tags = ", ".join(task.tags)
                 print(f"     标签: {old_tags} → {new_tags}")
@@ -214,7 +202,7 @@ remote:
     # Fetch existing remote records for this project
     try:
         print(f"Fetching existing records from Feishu for project '{project_name}'...")
-        remote_records = fetch_existing_tasks(
+        remote_records = fetch_project_tasks(
             api_endpoint,
             config.bot_app_id,
             config.bot_app_secret,
@@ -229,14 +217,10 @@ remote:
         return False
 
     # Compare local tasks with remote records
-    new_tasks, unchanged_tasks, modified_tasks = compare_tasks_with_records(
-        tasks, remote_records
-    )
+    new_tasks, unchanged_tasks, modified_tasks = compare_tasks_with_records(tasks, remote_records)
 
     # Print diff preview
-    print_diff_preview(
-        new_tasks, unchanged_tasks, modified_tasks, len(tasks), len(remote_records)
-    )
+    print_diff_preview(new_tasks, unchanged_tasks, modified_tasks, len(tasks), len(remote_records))
 
     # In dry-run mode, just return after preview
     if dry_run:
@@ -288,141 +272,23 @@ remote:
         return False
 
 
-def main():
-    """Main entry point."""
-    parser = argparse.ArgumentParser(
-        prog="tuido",
-        description="A TUI Kanban board for TODO.md files",
-    )
-    parser.add_argument(
-        "path",
-        nargs="?",
-        default=".",
-        help="Path to TODO.md file or directory containing it (default: .)",
-    )
-    parser.add_argument(
-        "--version",
-        action="version",
-        version="%(prog)s 0.1.0",
-    )
-    parser.add_argument(
-        "--create",
-        action="store_true",
-        help="Create a sample TODO.md if it doesn't exist",
-    )
-    parser.add_argument(
-        "--push",
-        action="store_true",
-        help="Push tasks to Feishu table (requires remote config in TODO.md)",
-    )
-    parser.add_argument(
-        "--preview",
-        action="store_true",
-        help="Preview changes without pushing (shows diff between local and remote)",
-    )
-    parser.add_argument(
-        "--global-view",
-        action="store_true",
-        dest="global_view",
-        help="Show global view of all projects from Feishu table (requires GLOBAL_VIEW_* env vars)",
-    )
-    args = parser.parse_args()
+def run_push_command(board: Board, todo_file: Path, dry_run: bool = False) -> int:
+    """Run the push command.
 
-    # Resolve the path
-    target_path = Path(args.path).resolve()
-    todo_file = find_todo_file(target_path)
+    Args:
+        board: The Board object containing tasks
+        todo_file: Path to the TODO.md file
+        dry_run: If True, only preview changes without pushing
 
-    # Create sample file if requested and doesn't exist
-    if args.create and not todo_file.exists():
-        sample_content = """# TUIDO
----
-theme: textual-dark
----
+    Returns:
+        Exit code (0 for success, 1 for failure)
+    """
+    # Determine project name
+    # Use parent directory name as project name
+    if todo_file.is_dir():
+        project_name = todo_file.name
+    else:
+        project_name = todo_file.parent.name
 
-## Todo
-- Implement user authentication #feature !P1
-- Write unit tests #testing
-  - backend tests #testing
-  - frontend tests #testing
-- Update documentation #docs
-
-## In Progress
-- Design database schema #backend
-
-## Blocked
-- Deploy to production #devops !P0
-
-## Done
-- Initial project setup #setup
-- Create repository structure #setup
-"""
-        todo_file.write_text(sample_content)
-        print(f"Created sample TODO.md at {todo_file}")
-        return
-
-    # Handle --global-view command
-    if args.global_view:
-        config = load_global_config()
-
-        # Check required config values
-        if not config.is_valid():
-            config_path = Path.home() / ".config" / "tuido" / "config.yaml"
-            missing = config.get_missing_fields()
-            for field in missing:
-                print(f"Error: feishu.{field} not found in {config_path}")
-            return 1
-
-        # Fetch tasks from Feishu
-        try:
-            print("Fetching global tasks from Feishu...")
-            records = fetch_global_tasks(
-                config.api_endpoint,
-                config.bot_app_id,
-                config.bot_app_secret,
-                config.table_app_token,
-                config.table_id,
-                config.table_view_id,
-            )
-            print(f"Fetched {len(records)} tasks from Feishu.")
-
-            # Convert to Board
-            board = Board.from_feishu_records(records)
-
-            # Launch the global view TUI
-            app = GlobalViewApp(board)
-            app.run()
-            return 0
-
-        except Exception as e:
-            print(f"Error fetching global tasks: {e}")
-            return 1
-
-    # Check if file exists
-    if not todo_file.exists():
-        print(f"Error: TODO.md not found at {todo_file}")
-        print("Use --create to create a sample file.")
-        return
-
-    # Parse the todo file
-    board = parse_todo_file(todo_file)
-
-    # Handle --push or --preview command
-    if args.push or args.preview:
-        # Determine project name
-        project_name: str
-        # Use parent directory name as project name
-        if todo_file.is_dir():
-            project_name = todo_file.name
-        else:
-            project_name = todo_file.parent.name
-
-        success = push_to_feishu(board, project_name, dry_run=args.preview)
-        return 0 if success else 1
-
-    # Launch the TUI app (default behavior)
-    app = TuidoApp(board, todo_file)
-    app.run()
-
-
-if __name__ == "__main__":
-    main()
+    success = push_to_feishu(board, project_name, dry_run=dry_run)
+    return 0 if success else 1
