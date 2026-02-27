@@ -255,6 +255,49 @@ class FeishuTable:
 DEFAULT_FIELD_NAMES = ["Task", "Project", "Status", "Tags", "Priority"]
 
 
+def fetch_existing_tasks(
+    api_endpoint: str,
+    bot_app_id: str,
+    bot_app_secret: str,
+    table_app_token: str,
+    table_id: str,
+    table_view_id: str,
+    project_name: str,
+    field_names: list[str] = DEFAULT_FIELD_NAMES,
+) -> list[dict[str, Any]]:
+    """Fetch existing tasks from Feishu table for a specific project.
+
+    Args:
+        api_endpoint: Feishu API endpoint
+        bot_app_id: Feishu bot app ID
+        bot_app_secret: Feishu bot app secret
+        table_app_token: Table app token
+        table_id: Table ID
+        table_view_id: Table view ID
+        project_name: Project name to filter by
+        field_names: Fields to fetch; defaults to Task/Project/Status/Tags/Priority
+
+    Returns:
+        List of parsed records keyed by the requested field names
+    """
+    bot = FeishuTable(api_endpoint, bot_app_id, bot_app_secret, table_app_token, table_id)
+    records = bot.fetch_all(table_view_id, field_names)
+
+    def _normalize(value: Any) -> Any:
+        if isinstance(value, list):
+            return ", ".join(map(str, value)) if value else ""
+        return value if value is not None else ""
+
+    # Filter by project name and normalize
+    result = []
+    for record in records:
+        record_project = record.get("Project", "")
+        if record_project == project_name:
+            result.append({field: _normalize(record.get(field)) for field in field_names})
+
+    return result
+
+
 def fetch_global_tasks(
     api_endpoint: str,
     bot_app_id: str,

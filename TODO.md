@@ -10,13 +10,13 @@ remote:
 # TUIDO
 
 ## Todo
-- `tuido --global-view` 改为从 `~/.config/tuido/config.json` 读取配置
 - 修复 `tuido --publish` 重复上传记录的问题 #bugfix
 
 ## In Progress
 - 支持汇总到飞书多维表格，能够全局展示多项目的任务列表 !P1
 
 ## Done
+- `tuido --global-view` 改为从 `~/.config/tuido/config.json` 读取配置
 - 支持切换主题 #ui
 - 支持层级展示 !P1
   - 读取逻辑，增加对层级的支持
