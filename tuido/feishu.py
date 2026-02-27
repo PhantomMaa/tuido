@@ -191,7 +191,7 @@ class FeishuTable:
 
         return result
 
-    def fetch_all(self, table_view_id: str, field_names: list[str], limit: int | None = None) -> list[dict[str, str]]:
+    def fetch_all(self, table_view_id: str, field_names: list[str], limit: int | None = None) -> list[dict[str, Any]]:
         """
         抓取视图中的所有记录
 
@@ -205,7 +205,7 @@ class FeishuTable:
         processed_count = 0
         page_token = None
 
-        records: list[dict[str, str]] = []
+        records: list[dict[str, Any]] = []
         while True:
             page_count += 1
             logger.info(f"正在获取第 {page_count} 页数据...")
@@ -252,9 +252,18 @@ class FeishuTable:
         return records
 
 
+DEFAULT_FIELD_NAMES = ["Task", "Project", "Status", "Tags", "Priority"]
+
+
 def fetch_global_tasks(
-    api_endpoint: str, bot_app_id: str, bot_app_secret: str, table_app_token: str, table_id: str, table_view_id: str
-) -> list[dict[str, str]]:
+    api_endpoint: str,
+    bot_app_id: str,
+    bot_app_secret: str,
+    table_app_token: str,
+    table_id: str,
+    table_view_id: str,
+    field_names: list[str] = DEFAULT_FIELD_NAMES,
+) -> list[dict[str, Any]]:
     """Fetch all tasks from Feishu table for global view.
 
     Args:
@@ -264,14 +273,17 @@ def fetch_global_tasks(
         table_app_token: Table app token
         table_id: Table ID
         table_view_id: Table view ID
+        field_names: Fields to fetch; defaults to Task/Project/Status/Tags/Priority
 
     Returns:
-        List of parsed records with fields: Task, Project, Status, Tags, Priority
+        List of parsed records keyed by the requested field names
     """
-    # Field names to fetch from Feishu table
-    field_names = ["Task", "Project", "Status", "Tags", "Priority"]
-
     bot = FeishuTable(api_endpoint, bot_app_id, bot_app_secret, table_app_token, table_id)
     records = bot.fetch_all(table_view_id, field_names)
 
-    return records
+    def _normalize(value: Any) -> Any:
+        if isinstance(value, list):
+            return ", ".join(map(str, value)) if value else ""
+        return value if value is not None else ""
+
+    return [{field: _normalize(record.get(field)) for field in field_names} for record in records]

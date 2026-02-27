@@ -7,7 +7,7 @@ from .parser import parse_todo_file
 from .ui import TuidoApp, GlobalViewApp
 from .feishu import FeishuTable, fetch_global_tasks
 from .models import Board, FeishuTask
-from .envs import bot_app_id, bot_app_secret, global_view_api_endpoint, global_view_table_app_token, global_view_table_id, global_view_table_view_id
+from .config import get_global_view_config
 
 
 def find_todo_file(path: Path) -> Path:
@@ -39,11 +39,11 @@ def push_to_feishu(board: Board, project_name: str) -> bool:
     remote_config = settings.get("remote", {})
 
     api_endpoint = remote_config.get("feishu_api_endpoint")
-    table_app_token = remote_config.get("feishu_table_app_token")
-    table_id = remote_config.get("feishu_table_id")
-    table_view_id = remote_config.get("feishu_table_view_id")
+    feishu_table_app_token = remote_config.get("feishu_table_app_token")
+    feishu_table_id = remote_config.get("feishu_table_id")
+    feishu_table_view_id = remote_config.get("feishu_table_view_id")
 
-    if not api_endpoint or not table_app_token or not table_id or not table_view_id:
+    if not api_endpoint or not feishu_table_app_token or not feishu_table_id or not feishu_table_view_id:
         print("Error: Feishu table configuration not found in TODO.md front matter.")
         print("Please add the following to your TODO.md:")
         print(
@@ -54,6 +54,20 @@ remote:
   feishu_table_id: your_table_id
   feishu_table_view_id: your_table_view_id
 ---"""
+        )
+        return False
+
+    config = get_global_view_config()
+    feishu_bot_app_id = config.get("feishu_bot_app_id", "")
+    feishu_bot_app_secret = config.get("feishu_bot_app_secret", "")
+    if not feishu_bot_app_id or not feishu_bot_app_secret:
+        print("Error: feishu_bot_app_id and feishu_bot_app_secret not found in global config.")
+        print("Please add the following to ~/.config/tuido/config.json:")
+        print(
+            """{
+    "feishu_bot_app_id": "your_bot_app_id",
+    "feishu_bot_app_secret": "your_bot_app_secret"
+}"""
         )
         return False
 
@@ -106,7 +120,7 @@ remote:
 
     # Initialize Feishu bot and push
     try:
-        bot = FeishuTable(api_endpoint, bot_app_id, bot_app_secret, table_app_token, table_id)
+        bot = FeishuTable(api_endpoint, feishu_bot_app_id, feishu_bot_app_secret, feishu_table_app_token, feishu_table_id)
         success = bot.batch_create(records)
 
         if success:
@@ -189,34 +203,46 @@ theme: textual-dark
 
     # Handle --global-view command
     if args.global_view:
-        # Check required env vars
-        if not global_view_api_endpoint:
-            print("Error: GLOBAL_VIEW_API_ENDPOINT environment variable not set.")
-            print("Please set it in your .env file.")
+        config = get_global_view_config()
+        feishu_api_endpoint = config.get("feishu_api_endpoint", "")
+        feishu_table_app_token = config.get("feishu_table_app_token", "")
+        feishu_table_id = config.get("feishu_table_id", "")
+        feishu_table_view_id = config.get("feishu_table_view_id", "")
+        feishu_bot_app_id = config.get("feishu_bot_app_id", "")
+        feishu_bot_app_secret = config.get("feishu_bot_app_secret", "")
+
+        # Check required config values
+        config_path = Path.home() / ".config" / "tuido" / "config.json"
+
+        if not feishu_api_endpoint:
+            print(f"Error: feishu_api_endpoint not found in {config_path}")
             return 1
-        if not global_view_table_app_token:
-            print("Error: GLOBAL_VIEW_TABLE_APP_TOKEN environment variable not set.")
-            print("Please set it in your .env file.")
+        if not feishu_table_app_token:
+            print(f"Error: feishu_table_app_token not found in {config_path}")
             return 1
-        if not global_view_table_id:
-            print("Error: GLOBAL_VIEW_TABLE_ID environment variable not set.")
-            print("Please set it in your .env file.")
+        if not feishu_table_id:
+            print(f"Error: feishu_table_id not found in {config_path}")
             return 1
-        if not global_view_table_view_id:
-            print("Error: GLOBAL_VIEW_TABLE_VIEW_ID environment variable not set.")
-            print("Please set it in your .env file.")
+        if not feishu_table_view_id:
+            print(f"Error: feishu_table_view_id not found in {config_path}")
+            return 1
+        if not feishu_bot_app_id:
+            print(f"Error: feishu_bot_app_id not found in {config_path}")
+            return 1
+        if not feishu_bot_app_secret:
+            print(f"Error: feishu_bot_app_secret not found in {config_path}")
             return 1
 
         # Fetch tasks from Feishu
         try:
             print("Fetching global tasks from Feishu...")
             records = fetch_global_tasks(
-                global_view_api_endpoint,
-                bot_app_id,
-                bot_app_secret,
-                global_view_table_app_token,
-                global_view_table_id,
-                global_view_table_view_id,
+                feishu_api_endpoint,
+                feishu_bot_app_id,
+                feishu_bot_app_secret,
+                feishu_table_app_token,
+                feishu_table_id,
+                feishu_table_view_id,
             )
             print(f"Fetched {len(records)} tasks from Feishu.")
 

@@ -10,7 +10,7 @@ remote:
 # TUIDO
 
 ## Todo
-- `tuido --global-view` 从 `~/.config/tuido/config.json` 读取配置
+- `tuido --global-view` 改为从 `~/.config/tuido/config.json` 读取配置
 - 修复 `tuido --publish` 重复上传记录的问题 #bugfix
 
 ## In Progress

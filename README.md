@@ -111,18 +111,6 @@ View tasks from all projects in a single read-only interface:
 tuido --global-view
 ```
 
-**Requirements for global view:**
-
-Add the following to your `.env` file:
-
-```bash
-BOT_APP_ID=your_bot_app_id
-BOT_APP_SECRET=your_bot_app_secret
-GLOBAL_VIEW_TABLE_APP_TOKEN=your_table_app_token
-GLOBAL_VIEW_TABLE_ID=your_table_id
-GLOBAL_VIEW_TABLE_VIEW_ID=your_table_view_id
-```
-
 The global view displays tasks from all projects organized by status columns (Todo, In Progress, Review, Blocked, Done).
 
 ## Requirements

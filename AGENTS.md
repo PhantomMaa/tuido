@@ -188,16 +188,6 @@ if current_status in columns:
 tuido --global-view
 ```
 
-**环境变量配置：**
-需要在 `.env` 文件中配置以下变量：
-```bash
-BOT_APP_ID=xxx
-BOT_APP_SECRET=xxx
-GLOBAL_VIEW_TABLE_APP_TOKEN=xxx
-GLOBAL_VIEW_TABLE_ID=xxx
-GLOBAL_VIEW_TABLE_VIEW_ID=xxx
-```
-
 **特性：**
 - 只读视图，不支持编辑和移动任务
 - 任务标题显示格式：`[项目名] 任务名`
@@ -219,7 +209,6 @@ tuido /path/to/project --push
 ```
 
 **要求**：
-1. `.env` 文件包含 `BOT_APP_ID` 和 `BOT_APP_SECRET`
 2. TODO.md 的 front matter 中配置了 `remote.feishu_table_app_token` 和 `remote.feishu_table_id`
 
 飞书表格字段映射：

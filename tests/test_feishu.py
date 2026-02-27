@@ -1,21 +1,21 @@
-from pathlib import Path
-
-from tuido.cli import find_todo_file
 from tuido.feishu import FeishuTable
-from tuido import envs
+from tuido.config import get_global_view_config
 from tuido.models import FeishuTask
-from tuido.parser import parse_todo_file
+
+feishu_table_view_id: str
 
 
 def _init_feishu_table():
-    todo_file = find_todo_file(Path("."))
-    board = parse_todo_file(todo_file)
-    settings = board.settings
-    remote_config = settings.get("remote", {})
-    table_app_token = remote_config.get("feishu_table_app_token")
-    table_id = remote_config.get("feishu_table_id")
-    table_view_id = remote_config.get("feishu_table_view_id")
-    feishu_table = FeishuTable(envs.bot_app_id, envs.bot_app_secret, table_app_token, table_id, table_view_id)
+    config = get_global_view_config()
+    feishu_api_endpoint = config.get("feishu_api_endpoint", "")
+    feishu_bot_app_id = config.get("feishu_bot_app_id", "")
+    feishu_bot_app_secret = config.get("feishu_bot_app_secret", "")
+    feishu_table_app_token = config.get("feishu_table_app_token", "")
+    feishu_table_id = config.get("feishu_table_id", "")
+    global feishu_table_view_id
+    feishu_table_view_id = config.get("feishu_table_view_id", "")
+
+    feishu_table = FeishuTable(feishu_api_endpoint, feishu_bot_app_id, feishu_bot_app_secret, feishu_table_app_token, feishu_table_id)
     return feishu_table
 
 
@@ -32,6 +32,5 @@ def test_batch_create():
 # pytest tests/test_feishu.py::test_fetch_all -s
 def test_fetch_all():
     feishu_table = _init_feishu_table()
-
-    result = feishu_table.fetch_all(["Task", "Project", "Status", "Tags", "Priority"])
+    result = feishu_table.fetch_all(feishu_table_view_id, ["Task", "Project", "Status", "Tags", "Priority"])
     print(result)
