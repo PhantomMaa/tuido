@@ -1,12 +1,100 @@
 """Data models for tuido."""
 
 from dataclasses import dataclass, field
-from typing import Optional
+from pathlib import Path
+from typing import Optional, Self
+
+import yaml
+
+
+@dataclass
+class FeishuConfig:
+    """飞书配置模型，自动从 YAML 配置加载."""
+
+    api_endpoint: str = ""
+    table_app_token: str = ""
+    table_id: str = ""
+    table_view_id: str = ""
+    bot_app_id: str = ""
+    bot_app_secret: str = ""
+
+    @classmethod
+    def from_yaml(cls, config_path: Path) -> Self:
+        """从 YAML 文件加载配置.
+
+        Args:
+            config_path: YAML 配置文件路径
+
+        Returns:
+            FeishuConfig 实例
+        """
+        if not config_path.exists():
+            return cls()
+
+        try:
+            with open(config_path, "r", encoding="utf-8") as f:
+                config = yaml.safe_load(f)
+
+            if not config or "feishu" not in config:
+                return cls()
+
+            feishu = config["feishu"]
+            return cls(
+                api_endpoint=feishu.get("api_endpoint", ""),
+                table_app_token=feishu.get("table_app_token", ""),
+                table_id=feishu.get("table_id", ""),
+                table_view_id=feishu.get("table_view_id", ""),
+                bot_app_id=feishu.get("bot_app_id", ""),
+                bot_app_secret=feishu.get("bot_app_secret", ""),
+            )
+        except (yaml.YAMLError, IOError):
+            return cls()
+
+    @classmethod
+    def from_default_path(cls) -> Self:
+        """从默认路径 ~/.config/tuido/config.yaml 加载配置.
+
+        Returns:
+            FeishuConfig 实例
+        """
+        config_path = Path.home() / ".config" / "tuido" / "config.yaml"
+        return cls.from_yaml(config_path)
+
+    def is_valid(self) -> bool:
+        """检查配置是否有效（所有必需字段都已配置）."""
+        return all(
+            [
+                self.api_endpoint,
+                self.table_app_token,
+                self.table_id,
+                self.table_view_id,
+                self.bot_app_id,
+                self.bot_app_secret,
+            ]
+        )
+
+    def get_missing_fields(self) -> list[str]:
+        """获取缺失的配置字段列表."""
+        missing = []
+        if not self.api_endpoint:
+            missing.append("api_endpoint")
+        if not self.table_app_token:
+            missing.append("table_app_token")
+        if not self.table_id:
+            missing.append("table_id")
+        if not self.table_view_id:
+            missing.append("table_view_id")
+        if not self.bot_app_id:
+            missing.append("bot_app_id")
+        if not self.bot_app_secret:
+            missing.append("bot_app_secret")
+        return missing
 
 
 @dataclass
 class FeishuTask:
     """Represents a task for Feishu table export."""
+
     task: str
     project: str
     status: str

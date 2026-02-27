@@ -15,11 +15,11 @@
 tuido/
 ├── __init__.py      # 包版本
 ├── cli.py           # CLI 入口 (argparse)
-├── models.py        # 数据模型: Task, Board, FeishuTask
+├── models.py        # 数据模型: Task, Board, FeishuTask, FeishuConfig
 ├── parser.py        # TODO.md 读写逻辑
 ├── ui.py            # Textual TUI 实现
 ├── feishu.py        # 飞书 API 封装
-└── envs.py          # 环境变量加载
+└── config.py        # 全局配置加载 (~/.config/tuido/config.yaml)
 ```
 
 ## 数据格式 (TODO.md)
@@ -188,6 +188,20 @@ if current_status in columns:
 tuido --global-view
 ```
 
+**配置要求：**
+
+全局视图需要配置 `~/.config/tuido/config.yaml`：
+
+```yaml
+feishu:
+  api_endpoint: https://fsopen.bytedance.net/open-apis
+  table_app_token: your_table_app_token
+  table_id: your_table_id
+  table_view_id: your_table_view_id
+  bot_app_id: your_bot_app_id
+  bot_app_secret: your_bot_app_secret
+```
+
 **特性：**
 - 只读视图，不支持编辑和移动任务
 - 任务标题显示格式：`[项目名] 任务名`
@@ -209,6 +223,7 @@ tuido /path/to/project --push
 ```
 
 **要求**：
+1. `~/.config/tuido/config.yaml` 中配置了 `feishu.bot_app_id` 和 `feishu.bot_app_secret`
 2. TODO.md 的 front matter 中配置了 `remote.feishu_table_app_token` 和 `remote.feishu_table_id`
 
 飞书表格字段映射：

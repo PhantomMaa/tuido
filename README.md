@@ -111,6 +111,20 @@ View tasks from all projects in a single read-only interface:
 tuido --global-view
 ```
 
+**Configuration:**
+
+Create `~/.config/tuido/config.yaml` with your Feishu credentials:
+
+```yaml
+feishu:
+  api_endpoint: https://fsopen.bytedance.net/open-apis
+  table_app_token: your_table_app_token
+  table_id: your_table_id
+  table_view_id: your_table_view_id
+  bot_app_id: your_bot_app_id
+  bot_app_secret: your_bot_app_secret
+```
+
 The global view displays tasks from all projects organized by status columns (Todo, In Progress, Review, Blocked, Done).
 
 ## Requirements

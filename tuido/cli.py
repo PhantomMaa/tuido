@@ -7,7 +7,7 @@ from .parser import parse_todo_file
 from .ui import TuidoApp, GlobalViewApp
 from .feishu import FeishuTable, fetch_global_tasks
 from .models import Board, FeishuTask
-from .config import get_global_view_config
+from .config import load_global_config
 
 
 def find_todo_file(path: Path) -> Path:
@@ -57,17 +57,14 @@ remote:
         )
         return False
 
-    config = get_global_view_config()
-    feishu_bot_app_id = config.get("feishu_bot_app_id", "")
-    feishu_bot_app_secret = config.get("feishu_bot_app_secret", "")
-    if not feishu_bot_app_id or not feishu_bot_app_secret:
-        print("Error: feishu_bot_app_id and feishu_bot_app_secret not found in global config.")
-        print("Please add the following to ~/.config/tuido/config.json:")
+    config = load_global_config()
+    if not config.bot_app_id or not config.bot_app_secret:
+        print("Error: bot_app_id and bot_app_secret not found in global config.")
+        print("Please add the following to ~/.config/tuido/config.yaml:")
         print(
-            """{
-    "feishu_bot_app_id": "your_bot_app_id",
-    "feishu_bot_app_secret": "your_bot_app_secret"
-}"""
+            """feishu:
+  bot_app_id: your_bot_app_id
+  bot_app_secret: your_bot_app_secret"""
         )
         return False
 
@@ -120,7 +117,7 @@ remote:
 
     # Initialize Feishu bot and push
     try:
-        bot = FeishuTable(api_endpoint, feishu_bot_app_id, feishu_bot_app_secret, feishu_table_app_token, feishu_table_id)
+        bot = FeishuTable(api_endpoint, config.bot_app_id, config.bot_app_secret, feishu_table_app_token, feishu_table_id)
         success = bot.batch_create(records)
 
         if success:
@@ -203,46 +200,26 @@ theme: textual-dark
 
     # Handle --global-view command
     if args.global_view:
-        config = get_global_view_config()
-        feishu_api_endpoint = config.get("feishu_api_endpoint", "")
-        feishu_table_app_token = config.get("feishu_table_app_token", "")
-        feishu_table_id = config.get("feishu_table_id", "")
-        feishu_table_view_id = config.get("feishu_table_view_id", "")
-        feishu_bot_app_id = config.get("feishu_bot_app_id", "")
-        feishu_bot_app_secret = config.get("feishu_bot_app_secret", "")
+        config = load_global_config()
 
         # Check required config values
-        config_path = Path.home() / ".config" / "tuido" / "config.json"
-
-        if not feishu_api_endpoint:
-            print(f"Error: feishu_api_endpoint not found in {config_path}")
-            return 1
-        if not feishu_table_app_token:
-            print(f"Error: feishu_table_app_token not found in {config_path}")
-            return 1
-        if not feishu_table_id:
-            print(f"Error: feishu_table_id not found in {config_path}")
-            return 1
-        if not feishu_table_view_id:
-            print(f"Error: feishu_table_view_id not found in {config_path}")
-            return 1
-        if not feishu_bot_app_id:
-            print(f"Error: feishu_bot_app_id not found in {config_path}")
-            return 1
-        if not feishu_bot_app_secret:
-            print(f"Error: feishu_bot_app_secret not found in {config_path}")
+        if not config.is_valid():
+            config_path = Path.home() / ".config" / "tuido" / "config.yaml"
+            missing = config.get_missing_fields()
+            for field in missing:
+                print(f"Error: feishu.{field} not found in {config_path}")
             return 1
 
         # Fetch tasks from Feishu
         try:
             print("Fetching global tasks from Feishu...")
             records = fetch_global_tasks(
-                feishu_api_endpoint,
-                feishu_bot_app_id,
-                feishu_bot_app_secret,
-                feishu_table_app_token,
-                feishu_table_id,
-                feishu_table_view_id,
+                config.api_endpoint,
+                config.bot_app_id,
+                config.bot_app_secret,
+                config.table_app_token,
+                config.table_id,
+                config.table_view_id,
             )
             print(f"Fetched {len(records)} tasks from Feishu.")
 

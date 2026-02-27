@@ -1,21 +1,22 @@
 from tuido.feishu import FeishuTable
-from tuido.config import get_global_view_config
+from tuido.config import load_global_config
 from tuido.models import FeishuTask
 
 feishu_table_view_id: str
 
 
 def _init_feishu_table():
-    config = get_global_view_config()
-    feishu_api_endpoint = config.get("feishu_api_endpoint", "")
-    feishu_bot_app_id = config.get("feishu_bot_app_id", "")
-    feishu_bot_app_secret = config.get("feishu_bot_app_secret", "")
-    feishu_table_app_token = config.get("feishu_table_app_token", "")
-    feishu_table_id = config.get("feishu_table_id", "")
+    config = load_global_config()
     global feishu_table_view_id
-    feishu_table_view_id = config.get("feishu_table_view_id", "")
+    feishu_table_view_id = config.table_view_id
 
-    feishu_table = FeishuTable(feishu_api_endpoint, feishu_bot_app_id, feishu_bot_app_secret, feishu_table_app_token, feishu_table_id)
+    feishu_table = FeishuTable(
+        config.api_endpoint,
+        config.bot_app_id,
+        config.bot_app_secret,
+        config.table_app_token,
+        config.table_id
+    )
     return feishu_table
 
 
