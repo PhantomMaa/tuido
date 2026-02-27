@@ -7,6 +7,7 @@ from tuido.parser import parse_todo_file
 from tuido.ui import TuidoApp
 from tuido.cmd_create import run_create_command
 from tuido.cmd_push import run_push_command
+from tuido.cmd_pull import run_pull_command
 from tuido.cmd_global_view import run_global_view_command
 
 
@@ -52,9 +53,14 @@ def main():
         help="Push tasks to Feishu table (requires remote config in TODO.md)",
     )
     parser.add_argument(
+        "--pull",
+        action="store_true",
+        help="Pull tasks from Feishu table (requires remote config in TODO.md)",
+    )
+    parser.add_argument(
         "--preview",
         action="store_true",
-        help="Preview changes without pushing (shows diff between local and remote)",
+        help="Preview changes without pushing/pulling (shows diff between local and remote)",
     )
     parser.add_argument(
         "--global-view",
@@ -86,9 +92,18 @@ def main():
     # Parse the todo file
     board = parse_todo_file(todo_file)
 
-    # Handle --push or --preview command
-    if args.push or args.preview:
+    # Handle --push command
+    if args.push:
         return run_push_command(board, todo_file, dry_run=args.preview)
+
+    # Handle --pull command
+    if args.pull:
+        return run_pull_command(board, todo_file, dry_run=args.preview)
+
+    # Handle --preview command (without --push or --pull)
+    if args.preview:
+        print("Error: --preview must be used with --push or --pull")
+        return 1
 
     # Launch the TUI app (default behavior)
     app = TuidoApp(board, todo_file)

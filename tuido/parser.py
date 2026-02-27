@@ -207,17 +207,25 @@ def parse_todo_file(file_path: Path) -> Board:
 
 def save_todo_file(file_path: Path, board: Board) -> None:
     """Save board back to TODO.md file.
-    
+
     按 board.columns 顺序写入栏目，每个栏目下写入对应任务。
     支持层级任务（通过缩进表示）。
     """
+    import yaml
+
     lines = []
-    
+
     # Write front matter settings at the beginning
     if board.settings:
         lines.append("---\n")
-        for key, value in board.settings.items():
-            lines.append(f"{key}: {value}\n")
+        # Use YAML dump for proper nested structure handling
+        yaml_content = yaml.safe_dump(
+            board.settings,
+            default_flow_style=False,
+            allow_unicode=True,
+            sort_keys=False,
+        )
+        lines.append(yaml_content)
         lines.append("---\n")
         lines.append("\n")
     
