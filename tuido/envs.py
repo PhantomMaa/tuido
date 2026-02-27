@@ -18,6 +18,7 @@ if not bot_app_secret:
     raise ValueError("BOT_APP_SECRET environment variable not set. " "Please set it with: export BOT_APP_SECRET=your-app-secret")
 
 # Global view configuration (from .env)
+global_view_api_endpoint = os.getenv("GLOBAL_VIEW_API_ENDPOINT", "")
 global_view_table_app_token = os.getenv("GLOBAL_VIEW_TABLE_APP_TOKEN", "")
 global_view_table_id = os.getenv("GLOBAL_VIEW_TABLE_ID", "")
 global_view_table_view_id = os.getenv("GLOBAL_VIEW_TABLE_VIEW_ID", "")

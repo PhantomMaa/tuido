@@ -1,30 +1,23 @@
 from datetime import datetime, timedelta
-import threading
 from typing import Any
 from loguru import logger
 import requests
-
-URL_FEISHU_OPEN_API: str = "https://fsopen.bytedance.net/open-apis"
 
 
 class FeishuTable:
     """飞书多维表格，传入机器人认证信息，支持自动token续期管理"""
 
-    def __init__(self, bot_app_id: str, bot_app_secret: str, table_app_token: str, table_id: str, table_view_id: str):
+    def __init__(self, api_endpoint: str, bot_app_id: str, bot_app_secret: str, table_app_token: str, table_id: str):
         """
         初始化飞书多维表格类
         """
-        self.tenant_access_token: str | None = None
-        self.token_expire_time: datetime | None = None
-        self._token_lock = threading.Lock()
-
+        self.api_endpoint = api_endpoint
         self.bot_app_id = bot_app_id
         self.bot_app_secret = bot_app_secret
         self.table_app_token = table_app_token
         self.table_id = table_id
-        self.table_view_id = table_view_id
 
-    def _get_tenant_access_token(self) -> str:
+    def get_access_token(self) -> str:
         """
         获取tenant_access_token
 
@@ -34,7 +27,7 @@ class FeishuTable:
         Raises:
             Exception: 获取token失败时抛出异常
         """
-        url = f"{URL_FEISHU_OPEN_API}/auth/v3/tenant_access_token/internal"
+        url = f"{self.api_endpoint}/auth/v3/tenant_access_token/internal"
         payload = {"app_id": self.bot_app_id, "app_secret": self.bot_app_secret}
         headers = {"Content-Type": "application/json"}
 
@@ -58,23 +51,7 @@ class FeishuTable:
             logger.error(f"获取tenant_access_token失败: {e}")
             raise
 
-    def get_access_token(self) -> str:
-        """
-        获取有效的access token，自动处理续期
-
-        Returns:
-            有效的tenant_access_token
-        """
-        with self._token_lock:
-            # 检查token是否存在或已过期
-            if self.tenant_access_token is None or self.token_expire_time is None or datetime.now() >= self.token_expire_time:
-
-                logger.info("Token不存在或已过期，重新获取")
-                self.tenant_access_token = self._get_tenant_access_token()
-
-            return self.tenant_access_token
-
-    def make_request(self, method: str, endpoint: str, **kwargs) -> requests.Response:
+    def _make_request(self, method: str, endpoint: str, **kwargs) -> requests.Response:
         """
         发起API请求的通用方法
 
@@ -86,7 +63,7 @@ class FeishuTable:
         Returns:
             Response对象
         """
-        url = f"{URL_FEISHU_OPEN_API}{endpoint}"
+        url = f"{self.api_endpoint}{endpoint}"
 
         # 获取有效token
         token = self.get_access_token()
@@ -113,7 +90,7 @@ class FeishuTable:
 
         try:
             endpoint = f"/bitable/v1/apps/{self.table_app_token}/tables/{self.table_id}/records/batch_create"
-            response = self.make_request("POST", endpoint, json=payload)
+            response = self._make_request("POST", endpoint, json=payload)
             result = response.json()
             if result.get("code") != 0:
                 logger.error(f"批量创建表格记录失败: {result.get('msg')}")
@@ -130,7 +107,7 @@ class FeishuTable:
 
         try:
             endpoint = f"/bitable/v1/apps/{table_app_token}/tables/{table_id}/records/{record_id}"
-            response = self.make_request("PUT", endpoint, json=payload)
+            response = self._make_request("PUT", endpoint, json=payload)
             result = response.json()
             if result.get("code") != 0:
                 logger.error(f"更新表格记录失败: {result.get('msg')}")
@@ -161,7 +138,7 @@ class FeishuTable:
         payload = {"field_names": field_names, "view_id": table_view_id}
 
         try:
-            response = self.make_request("POST", endpoint, json=payload, params=params)
+            response = self._make_request("POST", endpoint, json=payload, params=params)
             result = response.json()
             if result.get("code") != 0:
                 raise Exception(f"API请求失败: {result.get('msg')}")
@@ -175,7 +152,7 @@ class FeishuTable:
             logger.error(f"获取记录失败: {e}")
             raise
 
-    def parse_record(self, record: dict[str, Any], field_names: list[str] | None = None) -> dict[str, str]:
+    def _parse_record(self, record: dict[str, Any], field_names: list[str] | None = None) -> dict[str, Any]:
         """
         解析单条记录，动态提取指定字段
 
@@ -187,7 +164,7 @@ class FeishuTable:
             解析后的记录信息，包含record_id和指定的字段
         """
         fields = record.get("fields", {})
-        result = {"record_id": record.get("record_id", "")}
+        result: dict[str, Any] = {"record_id": record.get("record_id", "")}
 
         # 如果没有指定字段名，则解析所有字段
         target_fields = field_names if field_names else list(fields.keys())
@@ -196,21 +173,25 @@ class FeishuTable:
         for field_name in target_fields:
             field_value = fields.get(field_name, [])
 
-            # 处理文本类型字段（列表格式）
-            if field_value and isinstance(field_value, list) and len(field_value) > 0:
-                # 如果是字典且包含text字段
-                if isinstance(field_value[0], dict) and "text" in field_value[0]:
+            # 处理列表类型字段，支持多值
+            if isinstance(field_value, list):
+                if len(field_value) == 1:
                     result[field_name] = field_value[0].get("text", "")
                 else:
-                    # 其他类型直接取第一个元素
-                    result[field_name] = str(field_value[0])
+                    parsed_values = []
+                    for value in field_value:
+                        if isinstance(value, dict) and "text" in value:
+                            parsed_values.append(value.get("text", ""))
+                        else:
+                            parsed_values.append(value)
+                    result[field_name] = parsed_values
             else:
-                # 空值或非列表类型
+                # 非列表类型保持原值
                 result[field_name] = field_value
 
         return result
 
-    def fetch_all(self, field_names: list[str], limit: int | None = None) -> list[dict[str, str]]:
+    def fetch_all(self, table_view_id: str, field_names: list[str], limit: int | None = None) -> list[dict[str, str]]:
         """
         抓取视图中的所有记录
 
@@ -230,7 +211,7 @@ class FeishuTable:
             logger.info(f"正在获取第 {page_count} 页数据...")
 
             try:
-                data = self.fetch_records(self.table_view_id, field_names, page_size=200, page_token=page_token)
+                data = self.fetch_records(table_view_id, field_names, page_size=200, page_token=page_token)
                 items = data.get("items", [])
                 size = len(items)
                 total_count += size
@@ -245,7 +226,7 @@ class FeishuTable:
                         break
 
                     try:
-                        parsed_record = self.parse_record(item)
+                        parsed_record = self._parse_record(item)
                         processed_count += 1
 
                         records.append(parsed_record)
@@ -272,15 +253,12 @@ class FeishuTable:
 
 
 def fetch_global_tasks(
-    bot_app_id: str,
-    bot_app_secret: str,
-    table_app_token: str,
-    table_id: str,
-    table_view_id: str,
+    api_endpoint: str, bot_app_id: str, bot_app_secret: str, table_app_token: str, table_id: str, table_view_id: str
 ) -> list[dict[str, str]]:
     """Fetch all tasks from Feishu table for global view.
 
     Args:
+        api_endpoint: Feishu API endpoint
         bot_app_id: Feishu bot app ID
         bot_app_secret: Feishu bot app secret
         table_app_token: Table app token
@@ -293,7 +271,7 @@ def fetch_global_tasks(
     # Field names to fetch from Feishu table
     field_names = ["Task", "Project", "Status", "Tags", "Priority"]
 
-    bot = FeishuTable(bot_app_id, bot_app_secret, table_app_token, table_id, table_view_id)
-    records = bot.fetch_all(field_names)
+    bot = FeishuTable(api_endpoint, bot_app_id, bot_app_secret, table_app_token, table_id)
+    records = bot.fetch_all(table_view_id, field_names)
 
     return records
