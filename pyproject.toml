@@ -15,7 +15,7 @@ dependencies = [
 ]
 
 [project.scripts]
-tuido = "main:main"
+tuido = "tuido.main:main"
 
 [build-system]
 requires = ["hatchling"]
