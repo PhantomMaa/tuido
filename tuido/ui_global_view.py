@@ -3,7 +3,7 @@
 from textual.app import App, ComposeResult
 from textual.widgets import Footer
 from textual.binding import Binding
-from tuido.ui_local import KanbanBoard
+from tuido.ui_local import THEMES, KanbanBoard
 from tuido.models import Board, FeishuConfig
 from tuido.config import save_global_theme
 
@@ -115,7 +115,6 @@ Note: This is a read-only global view. Tasks cannot be moved or edited.
 
     def action_change_theme(self) -> None:
         """Cycle through available themes."""
-        themes = ["dracula", "textual-dark", "nord", "monokai", "solarized-dark"]
         # Get current theme from config or board settings
         if self.config and self.config.theme:
             current = self.config.theme
@@ -123,11 +122,11 @@ Note: This is a read-only global view. Tasks cannot be moved or edited.
             current = self.board.settings.get("theme", "dracula")
 
         try:
-            idx = themes.index(current)
+            idx = THEMES.index(current)
         except ValueError:
             idx = -1
 
-        next_theme = themes[(idx + 1) % len(themes)]
+        next_theme = THEMES[(idx + 1) % len(THEMES)]
         self.board.settings["theme"] = next_theme
         self.theme = next_theme
 

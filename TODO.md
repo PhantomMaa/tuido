@@ -1,5 +1,5 @@
 ---
-theme: textual-dark
+theme: rose-pine-moon
 remote:
   feishu_api_endpoint: https://fsopen.bytedance.net/open-apis
   feishu_table_app_token: FcS8bHGgRatZFZsrlDrl1nDOgeg

@@ -1,16 +1,29 @@
 """TUI UI components for tuido."""
 
-from functools import partial
-
 from textual.app import App, ComposeResult
 from textual.widgets import Footer, Static
 from textual.containers import Horizontal, Vertical
 from textual.binding import Binding
-from textual.command import Hit, Hits, Provider
 from rich.text import Text
 from rich.markup import escape
 
 from .models import Task, Board
+
+
+THEMES = [
+    "textual-dark",
+    "nord",
+    "gruvbox",
+    "catppuccin-mocha",
+    "dracula",
+    "monokai",
+    "flexoki",
+    "catppuccin-macchiato",
+    "solarized-dark",
+    "rose-pine",
+    "rose-pine-moon",
+    "atom-one-dark",
+]
 
 
 class TaskCard(Static):
@@ -137,11 +150,11 @@ class KanbanColumn(Vertical):
         """Add a task to this column, including its subtasks."""
         card = TaskCard(task, is_subtask=is_subtask)
         self.mount(card)
-        
+
         # 递归添加子任务
         for subtask in task.subtasks:
             self.add_task(subtask, is_subtask=True)
-        
+
         return card
 
     def clear_tasks(self) -> None:
@@ -457,8 +470,6 @@ class TuidoApp(App):
     }
     """
 
-    ENABLE_COMMAND_PALETTE = True
-
     BINDINGS = [
         Binding("q", "quit", "Quit"),
         Binding("r", "refresh", "Refresh"),
@@ -560,15 +571,14 @@ class TuidoApp(App):
 
     def action_change_theme(self) -> None:
         """Cycle through available themes."""
-        themes = ["dracula", "textual-dark", "nord", "monokai", "solarized-dark"]
         current = self.board.settings.get("theme", "dracula")
 
         try:
-            idx = themes.index(current)
+            idx = THEMES.index(current)
         except ValueError:
             idx = -1
 
-        next_theme = themes[(idx + 1) % len(themes)]
+        next_theme = THEMES[(idx + 1) % len(THEMES)]
         self.board.settings["theme"] = next_theme
         self.theme = next_theme
 
