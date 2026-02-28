@@ -6,20 +6,25 @@
 
 - **语言**: Python 3.12+
 - **框架**: Textual (TUI 框架)
-- **入口**: `tuido [path] [--create] [--push]`
-- **配置**: `pyproject.toml` (setuptools 打包)
+- **入口**: `tuido [path] [--create] [--push] [--pull] [--global-view]`
+- **配置**: `pyproject.toml` (hatchling 打包)
 
 ## 架构
 
 ```
 tuido/
-├── __init__.py      # 包版本
-├── cli.py           # CLI 入口 (argparse)
-├── models.py        # 数据模型: Task, Board, FeishuTask, FeishuConfig
-├── parser.py        # TODO.md 读写逻辑
-├── ui.py            # Textual TUI 实现
-├── feishu.py        # 飞书 API 封装
-└── config.py        # 全局配置加载 (~/.config/tuido/config.yaml)
+├── __init__.py           # 包版本
+├── main.py               # CLI 入口 (argparse)
+├── models.py             # 数据模型: Task, Board, FeishuTask, FeishuConfig
+├── parser.py             # TODO.md 读写逻辑
+├── ui_local.py           # 本地模式 TUI 实现
+├── ui_global_view.py     # 全局视图 TUI 实现
+├── feishu.py             # 飞书 API 封装
+├── config.py             # 全局配置加载 (~/.config/tuido/config.yaml)
+├── cmd_create.py         # --create 命令实现
+├── cmd_push.py           # --push 命令实现
+├── cmd_pull.py           # --pull 命令实现
+└── cmd_global_view.py    # --global-view 命令实现
 ```
 
 ## 数据格式 (TODO.md)
@@ -34,15 +39,19 @@ TODO.md 支持 YAML front matter 格式配置，放在文件开头：
 ---
 theme: textual-dark
 remote:
+  feishu_api_endpoint: https://open.feishu.cn/open-apis
   feishu_table_app_token: xxx
   feishu_table_id: yyy
+  feishu_table_view_id: zzz
 ---
 ```
 
 支持的配置项：
-- `theme`: TUI 主题
+- `theme`: TUI 主题 (dracula, textual-dark, nord, monokai, solarized-dark)
+- `remote.feishu_api_endpoint`: 飞书 API 端点
 - `remote.feishu_table_app_token`: 飞书多维表格 app token
 - `remote.feishu_table_id`: 飞书多维表格 ID
+- `remote.feishu_table_view_id`: 飞书多维表格视图 ID
 
 ```markdown
 ## Todo
@@ -82,7 +91,8 @@ remote:
 **规则：**
 - 每 2 个空格表示一级缩进
 - 子任务跟随父任务一起移动（左右移动栏目时）
-- TUI 中子任务显示为缩进样式，带有 `└─` 前缀
+- TUI 中子任务显示为缩进样式
+- 子任务在同列内可独立上下移动（调整顺序）
 
 ## 核心类
 
@@ -92,13 +102,21 @@ remote:
   - `level`: 层级深度（0为父任务，1+为子任务）
   - `parent`: 父任务引用（Task 或 None）
   - `subtasks`: 子任务列表（list[Task]）
+  - `project`: 项目名称（用于全局视图）
 - `Board`: 任务列表、**栏目顺序列表(columns)**、按栏目获取任务、重排序任务
   - `columns` 只存储顶级任务（level=0），子任务通过 `task.subtasks` 访问
+- `FeishuTask`: 用于飞书同步的扁平化任务模型
+- `FeishuConfig`: 飞书配置模型，从 YAML 加载
 
-### ui.py
+### ui_local.py
 - `TaskCard`: 单个任务组件 (**重要: 使用 `task_obj`, 不要用 `task`**)
 - `KanbanColumn`: 列容器，包含标题和任务列表
-- `KanbanBoard`: 主应用，处理导航、按键绑定、看板渲染
+- `KanbanBoard`: 本地看板主组件，处理导航、按键绑定、看板渲染
+- `TuidoApp`: 本地模式主应用
+
+### ui_global_view.py
+- `GlobalViewBoard`: 继承自 KanbanBoard，禁用移动操作
+- `GlobalViewApp`: 全局视图只读应用
 
 ## 键盘快捷键
 
@@ -109,8 +127,14 @@ remote:
 ### 任务操作
 - `Shift+←/H` - 左移 (移到上一栏目)
 - `Shift+→/L` - 右移 (移到下一栏目)
-- `Shift+↑/K` - 上移 (同列内调整顺序)
-- `Shift+↓/J` - 下移 (同列内调整顺序)
+- `Shift+↑/K` - 上移 (同列内调整顺序，支持子任务)
+- `Shift+↓/J` - 下移 (同列内调整顺序，支持子任务)
+
+### 其他操作
+- `r` - 从文件刷新
+- `s` - 保存到文件
+- `t` - 切换主题
+- `?` - 显示帮助
 
 ## 关键约定
 
@@ -159,13 +183,13 @@ if current_status in columns:
 ## 常见任务
 
 ### 添加新快捷键
-1. 在 `KanbanBoard.BINDINGS` 添加绑定
-2. 用 `@on(Key)` 装饰器实现处理方法
+1. 在 `TuidoApp.BINDINGS` 添加绑定
+2. 实现对应的 `action_*` 方法
 3. 如需更新 UI，调用 `refresh_board()`
 4. 刷新后需更新选中状态时，使用 `call_after_refresh()`
 
 ### 修改任务显示
-1. 更新 `TaskCard.render()` 方法
+1. 更新 `TaskCard.render_task()` 方法
 2. 用特殊字符测试标题/标签/负责人
 3. 确保 Rich 标记已正确转义
 
@@ -194,7 +218,7 @@ tuido --global-view
 
 ```yaml
 feishu:
-  api_endpoint: https://fsopen.bytedance.net/open-apis
+  api_endpoint: https://open.feishu.cn/open-apis
   table_app_token: your_table_app_token
   table_id: your_table_id
   table_view_id: your_table_view_id
@@ -208,6 +232,8 @@ feishu:
 - 按状态自动分栏（Todo, In Progress, Review, Blocked, Done）
 
 ## 飞书同步
+
+### 推送本地任务到飞书
 
 使用 `--push` 命令将任务同步到飞书多维表格：
 
@@ -224,7 +250,24 @@ tuido /path/to/project --push
 
 **要求**：
 1. `~/.config/tuido/config.yaml` 中配置了 `feishu.bot_app_id` 和 `feishu.bot_app_secret`
-2. TODO.md 的 front matter 中配置了 `remote.feishu_table_app_token` 和 `remote.feishu_table_id`
+2. TODO.md 的 front matter 中配置了 `remote.feishu_api_endpoint`, `remote.feishu_table_app_token`, `remote.feishu_table_id`, `remote.feishu_table_view_id`
+
+### 从飞书拉取任务到本地
+
+使用 `--pull` 命令将飞书多维表格中的任务同步到本地：
+
+```bash
+# 拉取飞书任务到当前目录 TODO.md
+tuido --pull
+
+# 拉取指定路径的 TODO.md
+tuido /path/to/project --pull
+```
+
+**特性：**
+- 对比本地和远程任务，显示差异预览
+- 支持新增、修改、删除任务的同步
+- 自动保存到 TODO.md 文件
 
 飞书表格字段映射：
 - `Task`: 任务标题（带子任务层级）
@@ -238,15 +281,20 @@ tuido /path/to/project --push
 手动运行：
 ```bash
 pip install -e .
-tuido test_todo.md --create  # 创建示例文件
-tuido test_todo.md           # 打开看板
-tuido --push                 # 推送到飞书
+tuido --create             # 创建示例文件
+tuido .                    # 打开看板
+tuido --push               # 推送到飞书
+tuido --pull               # 从飞书拉取
+tuido --global-view        # 全局视图
 ```
 
 ## 依赖
 
 - `textual` - TUI 框架
 - `rich` - 终端格式化 (textual 自带)
+- `requests` - HTTP 请求
+- `pyyaml` - YAML 解析
+- `loguru` - 日志
 
 开发安装：
 ```bash
