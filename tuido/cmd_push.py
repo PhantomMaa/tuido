@@ -320,8 +320,7 @@ remote:
     # 3. Delete orphaned records (remote records that don't exist locally)
     if orphaned_records:
         print(f"\n删除 {len(orphaned_records)} 个远程多余任务...")
-        orphaned_record_ids = [record.get("record_id") for record in orphaned_records if record.get("record_id")]
-
+        orphaned_record_ids = [record.get("record_id", "") for record in orphaned_records if record.get("record_id", "")]
         if orphaned_record_ids:
             try:
                 if bot.batch_delete(orphaned_record_ids):

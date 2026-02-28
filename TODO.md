@@ -12,6 +12,7 @@ remote:
 ## Todo
 - push、pull 命令增加对二级任务的支持
 - 为每个任务增加记录最后更新时间的功能
+- `--global-view` 模式下，也支持切换主题。这个设置保存到 `~/.config/tui/config.yaml` 里
 
 ## In Progress
 

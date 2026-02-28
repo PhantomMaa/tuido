@@ -4,7 +4,7 @@ import argparse
 from pathlib import Path
 
 from tuido.parser import parse_todo_file
-from tuido.ui import TuidoApp
+from tuido.ui_local import TuidoApp
 from tuido.cmd_create import run_create_command
 from tuido.cmd_push import run_push_command
 from tuido.cmd_pull import run_pull_command

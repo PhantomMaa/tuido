@@ -5,7 +5,7 @@ from pathlib import Path
 from tuido.feishu import fetch_global_tasks
 from tuido.config import load_global_config
 from tuido.models import Board
-from tuido.ui import GlobalViewApp
+from tuido.ui_global_view import GlobalViewApp
 
 
 def run_global_view_command() -> int:
