@@ -25,6 +25,7 @@ def record_to_feishu_task(record: dict[str, Any]) -> FeishuTask:
         status=record.get("Status", ""),
         tags=tags,
         priority=record.get("Priority", ""),
+        timestamp=record.get("Timestamp", ""),
     )
 
 
@@ -35,6 +36,7 @@ def feishu_task_to_task(feishu_task: FeishuTask) -> Task:
         column=feishu_task.status,
         tags=feishu_task.tags,
         priority=feishu_task.priority if feishu_task.priority else None,
+        updated_at=feishu_task.timestamp if feishu_task.timestamp else None,
     )
 
 
@@ -52,6 +54,7 @@ def task_matches_record(task: Task, feishu_task: FeishuTask) -> bool:
         and task.column == feishu_task.status
         and task_tags == feishu_tags
         and (task.priority or "") == feishu_task.priority
+        and (task.updated_at or "") == feishu_task.timestamp
     )
 
 
@@ -160,6 +163,10 @@ def print_pull_preview(
             remote_priority = remote_task.priority or "(无)"
             if local_priority != remote_priority:
                 print(f"     优先级: {local_priority} → {remote_priority}")
+            local_timestamp = local_task.updated_at or "(无)"
+            remote_timestamp = remote_task.timestamp or "(无)"
+            if local_timestamp != remote_timestamp:
+                print(f"     时间戳: {local_timestamp} → {remote_timestamp}")
 
     # Deleted tasks (in local but not in remote)
     if deleted_tasks:
@@ -217,6 +224,7 @@ def apply_remote_changes(
                     column=remote_task.status,
                     tags=remote_task.tags,
                     priority=remote_task.priority if remote_task.priority else None,
+                    updated_at=remote_task.timestamp if remote_task.timestamp else None,
                     subtasks=task.subtasks,  # Preserve subtasks
                 )
 

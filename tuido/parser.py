@@ -9,6 +9,7 @@ def parse_task_content(content: str) -> dict:
         "title": content,
         "tags": [],
         "priority": None,
+        "updated_at": None,
     }
 
     # Extract tags (e.g., #bug, #feature)
@@ -25,6 +26,13 @@ def parse_task_content(content: str) -> dict:
         result["title"] = re.sub(
             priority_pattern, "", result["title"]
         ).strip()
+
+    # Extract timestamp (e.g., ~2026-02-28T14:30)
+    timestamp_pattern = r"~(\d{4}-\d{2}-\d{2}T\d{2}:\d{2})"
+    timestamp_match = re.search(timestamp_pattern, content)
+    if timestamp_match:
+        result["updated_at"] = timestamp_match.group(1)
+        result["title"] = re.sub(timestamp_pattern, "", result["title"]).strip()
 
     return result
 
@@ -175,6 +183,7 @@ def parse_todo_file(file_path: Path) -> Board:
                 tags=metadata["tags"],
                 priority=metadata["priority"],
                 level=level,
+                updated_at=metadata["updated_at"],
             )
             
             # 处理层级关系
@@ -240,6 +249,8 @@ def save_todo_file(file_path: Path, board: Board) -> None:
             content += " " + " ".join(f"#{tag}" for tag in task.tags)
         if task.priority:
             content += f" !{task.priority.upper()}"
+        if task.updated_at:
+            content += f" ~{task.updated_at}"
         return f"{indent}- {content}"
     
     def write_task_with_subtasks(task: Task, indent_level: int = 0) -> list[str]:

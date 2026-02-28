@@ -10,7 +10,7 @@ A TUI (Terminal User Interface) Kanban board for TODO.md files.
 - ⌨️ Vim-style keybindings (h/j/k/l)
 - ↔️ Move tasks between columns with Shift+Arrow keys
 - 🔃 Reorder tasks within column (including subtasks)
-- 🏷️ Support for tags (#tag), priority (!P0/!P1/!P2/!P3/!P4)
+- 🏷️ Support for tags (#tag), priority (!P0/!P1/!P2/!P3/!P4), timestamp (~YYYY-MM-DDTHH:MM)
 - 💾 Save changes back to TODO.md
 - 🌏 **Global view** - View all projects' tasks from Feishu table
 - 🔄 **Bi-directional sync** - Push to and pull from Feishu table
@@ -82,16 +82,16 @@ theme: dracula
 # TODO
 
 ## Todo
-- Task to do #feature !P1
-- Another task #bug
+- Task to do #feature !P1 ~2026-02-28T10:30
+- Another task #bug ~2026-02-28T09:00
 
 ## In Progress
-- Currently working on
+- Currently working on ~2026-02-28T14:00
   - Subtask 1 #backend
   - Subtask 2 #frontend
 
 ## Done
-- Completed task
+- Completed task ~2026-02-27T16:30
 ```
 
 ### Dynamic Columns
@@ -109,8 +109,11 @@ The column order follows the order they appear in the file.
 - `- ` - Task prefix (required)
 - `#tag` - Tags (e.g., #feature, #bug, #docs)
 - `!P0` / `!P1` / `!P2` / `!P3` / `!P4` - Priority (P0 = highest, P4 = lowest)
+- `~YYYY-MM-DDTHH:MM` - Last updated timestamp (e.g., ~2026-02-28T14:30)
 
 Task status is determined by which section (`## Todo`, `## In Progress`, etc.) it belongs to.
+
+**Note:** The timestamp is automatically updated when you move or reorder tasks in the TUI, and is synced with Feishu's `Timestamp` field.
 
 ### Subtasks (Hierarchical Tasks)
 

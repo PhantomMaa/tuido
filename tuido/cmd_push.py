@@ -22,11 +22,11 @@ def task_matches_record(task: FeishuTask, record: dict[str, Any]) -> bool:
         task.task == record.get("Task", "")
         and task.project == record.get("Project", "")
         and task.status == record.get("Status", "")
-        and normalize_tags(task.tags)
-        == normalize_tags(
+        and normalize_tags(task.tags) == normalize_tags(
             record.get("Tags", []) if isinstance(record.get("Tags"), list) else record.get("Tags", "").split(", ") if record.get("Tags") else []
         )
         and task.priority == record.get("Priority", "")
+        and task.timestamp == record.get("Timestamp", "")
     )
 
 
@@ -116,6 +116,10 @@ def print_diff_preview(
                 old_priority = remote.get("Priority", "") or "(无)"
                 new_priority = task.priority or "(无)"
                 print(f"     优先级: {old_priority} → {new_priority}")
+            if task.timestamp != remote.get("Timestamp", ""):
+                old_timestamp = remote.get("Timestamp", "") or "(无)"
+                new_timestamp = task.timestamp or "(无)"
+                print(f"     时间戳: {old_timestamp} → {new_timestamp}")
 
     # Orphaned records (to be deleted)
     if orphaned_records:
@@ -198,6 +202,7 @@ remote:
                 status=column_name,
                 tags=task.tags,
                 priority=task.priority or "",
+                timestamp=task.updated_at or "",
             )
             tasks.append(feishu_task)
 
@@ -275,6 +280,7 @@ remote:
                 "Status": task.status,
                 "Tags": task.tags,
                 "Priority": task.priority,
+                "Timestamp": task.timestamp,
             }
             record = {"fields": fields}
             records.append(record)
@@ -304,6 +310,7 @@ remote:
             "Status": task.status,
             "Tags": task.tags,
             "Priority": task.priority,
+            "Timestamp": task.timestamp,
         }
 
         try:

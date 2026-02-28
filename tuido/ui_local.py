@@ -1,5 +1,7 @@
 """TUI UI components for tuido."""
 
+from datetime import datetime
+
 from textual.app import App, ComposeResult
 from textual.widgets import Footer, Static
 from textual.containers import Horizontal, Vertical
@@ -364,6 +366,10 @@ class KanbanBoard(Vertical):
                 # Left move: insert at end of left column
                 # Right move: insert at start of right column
                 insert_at = "end" if direction == "left" else "start"
+
+                # Update timestamp when moving task
+                card.task_obj.updated_at = datetime.now().strftime("%Y-%m-%dT%H:%M")
+
                 self.board.move_task_to_column(card.task_obj, new_column, insert_at)
 
                 # Refresh the entire board
@@ -383,6 +389,8 @@ class KanbanBoard(Vertical):
         elif direction in ("up", "down"):
             # Reorder within column
             if self.board.reorder_task(card.task_obj, direction):
+                # Update timestamp when reordering task
+                card.task_obj.updated_at = datetime.now().strftime("%Y-%m-%dT%H:%M")
                 # Refresh board to show new order
                 self.refresh_board()
 

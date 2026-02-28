@@ -102,6 +102,7 @@ class FeishuTask:
     status: str
     tags: list[str]
     priority: str
+    timestamp: str = ""
 
 
 @dataclass
@@ -116,6 +117,7 @@ class Task:
     parent: Optional["Task"] = None  # 父任务引用
     subtasks: list["Task"] = field(default_factory=list)  # 子任务列表
     project: Optional[str] = None  # 项目名称（用于全局视图）
+    updated_at: Optional[str] = None  # 最后更新时间，格式: YYYY-MM-DDTHH:MM
 
     def __str__(self) -> str:
         return f"[{self.column}] {self.title}"
@@ -230,6 +232,7 @@ class Board:
             status = record.get("Status", "Todo")
             tags_str = record.get("Tags", "")
             priority = record.get("Priority", "")
+            timestamp = record.get("Timestamp", "")
 
             # Skip empty tasks
             if not title:
@@ -250,6 +253,7 @@ class Board:
                 tags=tags,
                 priority=priority if priority else None,
                 project=project if project else None,
+                updated_at=timestamp if timestamp else None,
             )
 
             # Add to appropriate column
