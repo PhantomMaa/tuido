@@ -58,11 +58,6 @@ def main():
         help="Pull tasks from Feishu table (requires remote config in TODO.md)",
     )
     parser.add_argument(
-        "--preview",
-        action="store_true",
-        help="Preview changes without pushing/pulling (shows diff between local and remote)",
-    )
-    parser.add_argument(
         "--global-view",
         action="store_true",
         dest="global_view",
@@ -94,16 +89,11 @@ def main():
 
     # Handle --push command
     if args.push:
-        return run_push_command(board, todo_file, dry_run=args.preview)
+        return run_push_command(board, todo_file)
 
     # Handle --pull command
     if args.pull:
-        return run_pull_command(board, todo_file, dry_run=args.preview)
-
-    # Handle --preview command (without --push or --pull)
-    if args.preview:
-        print("Error: --preview must be used with --push or --pull")
-        return 1
+        return run_pull_command(board, todo_file)
 
     # Launch the TUI app (default behavior)
     app = TuidoApp(board, todo_file)

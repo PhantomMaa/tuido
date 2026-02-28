@@ -86,10 +86,6 @@ def print_diff_preview(
         print(f"\n🟢 新增任务 ({len(new_tasks)} 个):")
         for task in new_tasks:
             print(f"   + [{task.status}] {task.task}")
-            if task.tags:
-                print(f"     标签: {', '.join(task.tags)}")
-            if task.priority:
-                print(f"     优先级: {task.priority}")
 
     # Modified tasks
     if modified_tasks:
@@ -121,7 +117,7 @@ def print_diff_preview(
     print(f"{'='*60}\n")
 
 
-def push_to_feishu(board: Board, project_name: str, dry_run: bool = False) -> bool:
+def push_to_feishu(board: Board, project_name: str) -> bool:
     """Push tasks to Feishu table.
 
     Args:
@@ -212,7 +208,6 @@ remote:
             project_name,
         )
         print(f"Found {len(remote_records)} existing records.")
-        print(f"Found records: {remote_records}")
     except Exception as e:
         print(f"Error fetching existing records: {e}")
         return False
@@ -222,10 +217,6 @@ remote:
 
     # Print diff preview
     print_diff_preview(new_tasks, unchanged_tasks, modified_tasks, len(tasks), len(remote_records))
-
-    # In dry-run mode, just return after preview
-    if dry_run:
-        return True
 
     # Calculate tasks to actually push (new + modified)
     tasks_to_push = new_tasks + [task for task, _ in modified_tasks]
@@ -314,13 +305,12 @@ remote:
         return fail_count == 0
 
 
-def run_push_command(board: Board, todo_file: Path, dry_run: bool = False) -> int:
+def run_push_command(board: Board, todo_file: Path) -> int:
     """Run the push command.
 
     Args:
         board: The Board object containing tasks
         todo_file: Path to the TODO.md file
-        dry_run: If True, only preview changes without pushing
 
     Returns:
         Exit code (0 for success, 1 for failure)
@@ -332,5 +322,5 @@ def run_push_command(board: Board, todo_file: Path, dry_run: bool = False) -> in
     else:
         project_name = todo_file.parent.name
 
-    success = push_to_feishu(board, project_name, dry_run=dry_run)
+    success = push_to_feishu(board, project_name)
     return 0 if success else 1

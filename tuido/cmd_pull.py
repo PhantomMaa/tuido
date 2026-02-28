@@ -6,7 +6,7 @@ from typing import Any
 from tuido.feishu import fetch_project_tasks
 from tuido.models import Board, FeishuTask, Task
 from tuido.config import load_global_config
-from tuido.parser import parse_todo_file, save_todo_file
+from tuido.parser import save_todo_file
 
 
 def normalize_tags(tags: list[str]) -> str:
@@ -349,7 +349,7 @@ remote:
         return False, board
 
 
-def run_pull_command(board: Board, todo_file: Path, dry_run: bool = False) -> int:
+def run_pull_command(board: Board, todo_file: Path) -> int:
     """Run the pull command.
 
     Args:
@@ -367,9 +367,9 @@ def run_pull_command(board: Board, todo_file: Path, dry_run: bool = False) -> in
     else:
         project_name = todo_file.parent.name
 
-    success, updated_board = pull_from_feishu(board, project_name, dry_run=dry_run)
+    success, updated_board = pull_from_feishu(board, project_name)
 
-    if success and not dry_run:
+    if success:
         # Save the updated board back to file
         try:
             save_todo_file(todo_file, updated_board)
