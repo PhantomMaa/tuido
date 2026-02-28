@@ -2,6 +2,23 @@ from datetime import datetime
 from typing import Any
 
 
+def parse_timestamp_to_ms(timestamp_str: str) -> int | None:
+    """Parse timestamp string to milliseconds since epoch.
+
+    Handles format: YYYY-MM-DDTHH:MM
+    Returns None if parsing fails.
+    """
+    if not timestamp_str:
+        return None
+    try:
+        # Parse format: YYYY-MM-DDTHH:MM
+        dt = datetime.strptime(timestamp_str, "%Y-%m-%dT%H:%M")
+        # Convert to milliseconds since epoch
+        return int(dt.timestamp() * 1000)
+    except (ValueError, OSError):
+        return None
+
+
 def parse_feishu_timestamp(timestamp_value: Any) -> str:
     """将飞书返回的时间戳转换为本地格式.
 

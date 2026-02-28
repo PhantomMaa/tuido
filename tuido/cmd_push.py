@@ -1,8 +1,10 @@
 """Push command implementation for tuido."""
 
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
+from tuido import util
 from tuido.feishu import FeishuTable, fetch_project_tasks
 from tuido.models import Board, FeishuTask
 from tuido.config import load_global_config
@@ -22,7 +24,8 @@ def task_matches_record(task: FeishuTask, record: dict[str, Any]) -> bool:
         task.task == record.get("Task", "")
         and task.project == record.get("Project", "")
         and task.status == record.get("Status", "")
-        and normalize_tags(task.tags) == normalize_tags(
+        and normalize_tags(task.tags)
+        == normalize_tags(
             record.get("Tags", []) if isinstance(record.get("Tags"), list) else record.get("Tags", "").split(", ") if record.get("Tags") else []
         )
         and task.priority == record.get("Priority", "")
@@ -280,7 +283,7 @@ remote:
                 "Status": task.status,
                 "Tags": task.tags,
                 "Priority": task.priority,
-                "Timestamp": task.timestamp,
+                "Timestamp": util.parse_timestamp_to_ms(task.timestamp),
             }
             record = {"fields": fields}
             records.append(record)
@@ -310,9 +313,8 @@ remote:
             "Status": task.status,
             "Tags": task.tags,
             "Priority": task.priority,
-            "Timestamp": task.timestamp,
+            "Timestamp": util.parse_timestamp_to_ms(task.timestamp),
         }
-
         try:
             if bot.update(feishu_table_app_token, feishu_table_id, record_id, fields):
                 print(f"✓ 更新任务: {task.task}")
