@@ -201,21 +201,14 @@ class FeishuTable:
         for field_name in target_fields:
             field_value = fields.get(field_name, [])
 
-            # 处理列表类型字段，支持多值
+            # 处理列表类型字段。如果是列表，返回其中的文本内容的列表；如果是单值或者单值列表则直接返回该值
             if isinstance(field_value, list):
-                if len(field_value) == 1:
-                    if isinstance(field_value[0], dict) and "text" in field_value[0]:
-                        result[field_name] = field_value[0].get("text", "")
-                    else:
-                        result[field_name] = field_value[0]
-                else:
-                    parsed_values = []
-                    for value in field_value:
-                        if isinstance(value, dict) and "text" in value:
-                            parsed_values.append(value.get("text", ""))
-                        else:
-                            parsed_values.append(value)
-                    result[field_name] = parsed_values
+
+                def _parse(v: Any) -> Any:
+                    return v.get("text", "") if isinstance(v, dict) and "text" in v else v
+
+                parsed = [_parse(v) for v in field_value]
+                result[field_name] = parsed[0] if len(parsed) == 1 else parsed
             else:
                 # 非列表类型保持原值
                 result[field_name] = field_value

@@ -11,6 +11,7 @@ remote:
 
 ## Todo
 - push、pull 命令增加对二级任务的支持
+- 为每个任务增加记录最后更新时间的功能
 
 ## In Progress
 
