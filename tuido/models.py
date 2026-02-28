@@ -17,6 +17,7 @@ class FeishuConfig:
     table_view_id: str = ""
     bot_app_id: str = ""
     bot_app_secret: str = ""
+    theme: str = "dracula"
 
     @classmethod
     def from_yaml(cls, config_path: Path) -> Self:
@@ -46,6 +47,7 @@ class FeishuConfig:
                 table_view_id=feishu.get("table_view_id", ""),
                 bot_app_id=feishu.get("bot_app_id", ""),
                 bot_app_secret=feishu.get("bot_app_secret", ""),
+                theme=config.get("theme", "dracula"),
             )
         except (yaml.YAMLError, IOError):
             return cls()

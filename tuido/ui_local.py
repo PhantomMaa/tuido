@@ -1,9 +1,12 @@
 """TUI UI components for tuido."""
 
+from functools import partial
+
 from textual.app import App, ComposeResult
 from textual.widgets import Footer, Static
 from textual.containers import Horizontal, Vertical
 from textual.binding import Binding
+from textual.command import Hit, Hits, Provider
 from rich.text import Text
 from rich.markup import escape
 
@@ -453,6 +456,8 @@ class TuidoApp(App):
         align: center middle;
     }
     """
+
+    ENABLE_COMMAND_PALETTE = True
 
     BINDINGS = [
         Binding("q", "quit", "Quit"),

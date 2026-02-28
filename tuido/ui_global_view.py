@@ -4,7 +4,8 @@ from textual.app import App, ComposeResult
 from textual.widgets import Footer
 from textual.binding import Binding
 from tuido.ui_local import KanbanBoard
-from tuido.models import Board
+from tuido.models import Board, FeishuConfig
+from tuido.config import save_global_theme
 
 
 class GlobalViewBoard(KanbanBoard):
@@ -49,14 +50,19 @@ class GlobalViewApp(App):
         Binding("t", "change_theme", "Theme"),
     ]
 
-    def __init__(self, board: Board, **kwargs):
+    def __init__(self, board: Board, config: FeishuConfig | None = None, **kwargs):
         self.board = board
+        self.config = config
         self._kanban_board = None
         super().__init__(**kwargs)
 
     def on_mount(self) -> None:
-        """Set theme on mount from settings or default."""
-        theme = self.board.settings.get("theme", "dracula")
+        """Set theme on mount from config, settings or default."""
+        # Priority: config.theme > board.settings > default
+        if self.config and self.config.theme:
+            theme = self.config.theme
+        else:
+            theme = self.board.settings.get("theme", "dracula")
         self.theme = theme
 
     def compose(self) -> ComposeResult:
@@ -110,7 +116,11 @@ Note: This is a read-only global view. Tasks cannot be moved or edited.
     def action_change_theme(self) -> None:
         """Cycle through available themes."""
         themes = ["dracula", "textual-dark", "nord", "monokai", "solarized-dark"]
-        current = self.board.settings.get("theme", "dracula")
+        # Get current theme from config or board settings
+        if self.config and self.config.theme:
+            current = self.config.theme
+        else:
+            current = self.board.settings.get("theme", "dracula")
 
         try:
             idx = themes.index(current)
@@ -120,4 +130,10 @@ Note: This is a read-only global view. Tasks cannot be moved or edited.
         next_theme = themes[(idx + 1) % len(themes)]
         self.board.settings["theme"] = next_theme
         self.theme = next_theme
-        self.notify(f"Theme changed to: {next_theme}")
+
+        # Save to global config
+        try:
+            save_global_theme(next_theme)
+            self.notify(f"Theme changed to: {next_theme}")
+        except Exception as e:
+            self.notify(f"Theme changed but failed to save: {e}", severity="warning")

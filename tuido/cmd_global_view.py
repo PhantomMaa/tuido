@@ -41,7 +41,7 @@ def run_global_view_command() -> int:
         board = Board.from_feishu_records(records)
 
         # Launch the global view TUI
-        app = GlobalViewApp(board)
+        app = GlobalViewApp(board, config=config)
         app.run()
         return 0
 
