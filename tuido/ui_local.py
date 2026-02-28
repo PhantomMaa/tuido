@@ -93,6 +93,11 @@ class TaskCard(Static):
             tags_str = " ".join(f"[yellow]#{tag}[/yellow]" for tag in self.task_obj.tags)
             meta_parts.append(tags_str)
 
+        # Add timestamp if available (date only)
+        if self.task_obj.updated_at:
+            date_str = self.task_obj.updated_at.split("T")[0] if "T" in self.task_obj.updated_at else self.task_obj.updated_at
+            meta_parts.append(f"[dim]~{date_str}[/dim]")
+
         if meta_parts:
             # 子任务的元数据增加缩进
             prefix = "   " if self.is_subtask else ""

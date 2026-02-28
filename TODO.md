@@ -1,5 +1,5 @@
 ---
-theme: rose-pine-moon
+theme: atom-one-dark
 remote:
   feishu_api_endpoint: https://fsopen.bytedance.net/open-apis
   feishu_table_app_token: FcS8bHGgRatZFZsrlDrl1nDOgeg
@@ -15,7 +15,7 @@ remote:
 ## In Progress
 
 ## Done
-- 为每个任务增加记录最后更新时间的功能 ~2026-02-28T16:29
+- 为每个任务增加记录最后更新时间的功能 ~2026-02-28T17:16
 - `--global-view` 模式下，也支持切换主题。这个设置保存到 `~/.config/tui/config.yaml` 里 ~2026-02-24T13:28
 - push 命令能够预览远程比本地多出来的任务，真正执行时，以本地为准，将多余远程任务做删除 ~2026-02-24T13:28
 - 增加 `~/.config/tuido/config.json` 的配置方式 ~2026-02-24T13:28

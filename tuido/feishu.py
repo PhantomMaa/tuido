@@ -2,6 +2,7 @@ from datetime import datetime, timedelta
 from typing import Any
 from loguru import logger
 import requests
+from tuido import util
 
 
 class FeishuTable:
@@ -279,45 +280,6 @@ class FeishuTable:
 DEFAULT_FIELD_NAMES = ["Task", "Project", "Status", "Tags", "Priority", "Timestamp"]
 
 
-def _parse_feishu_timestamp(timestamp_value: Any) -> str:
-    """将飞书返回的时间戳转换为本地格式.
-
-    飞书可能返回:
-    - 毫秒级 Unix 时间戳 (int): 1772260200000
-    - ISO 格式字符串: "2026-02-28T14:30:00"
-    - 空值
-
-    返回:
-        格式为 "YYYY-MM-DDTHH:MM" 的字符串，或空字符串
-    """
-    if not timestamp_value:
-        return ""
-
-    # 如果是数字（毫秒时间戳）
-    if isinstance(timestamp_value, (int, float)):
-        try:
-            dt = datetime.fromtimestamp(timestamp_value / 1000)
-            return dt.strftime("%Y-%m-%dT%H:%M")
-        except (ValueError, OSError):
-            return ""
-
-    # 如果是字符串，尝试解析
-    if isinstance(timestamp_value, str):
-        # 已经是目标格式
-        if len(timestamp_value) == 16 and timestamp_value[10] == "T":
-            return timestamp_value
-
-        # 尝试解析 ISO 格式 (2026-02-28T14:30:00)
-        try:
-            if "T" in timestamp_value:
-                dt = datetime.fromisoformat(timestamp_value.replace("Z", "+00:00").replace("+00:00", ""))
-                return dt.strftime("%Y-%m-%dT%H:%M")
-        except ValueError:
-            pass
-
-    return ""
-
-
 def fetch_project_tasks(
     api_endpoint: str,
     bot_app_id: str,
@@ -378,9 +340,10 @@ def fetch_global_tasks(
             return ", ".join(map(str, value)) if value else ""
         return value if value is not None else ""
 
-    field_names.append("record_id")  # 确保 record_id 也被包含在结果中
-    result = [{field: _normalize(record.get(field)) for field in field_names} for record in records]
-    # 转换飞书的时间戳格式为本地格式
-    for record in result:
-        record["Timestamp"] = _parse_feishu_timestamp(record["Timestamp"])
+    all_fields = [*field_names, "record_id"]  # 不修改原始列表
+    result = []
+    for record in records:
+        row = {field: _normalize(record.get(field)) for field in all_fields}
+        row["Timestamp"] = util.parse_feishu_timestamp(row.get("Timestamp", ""))
+        result.append(row)
     return result
