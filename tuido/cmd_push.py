@@ -32,7 +32,7 @@ def task_matches_record(task: FeishuTask, record: dict[str, Any]) -> bool:
 
 def compare_tasks_with_records(
     local_tasks: list[FeishuTask], remote_records: list[dict[str, Any]]
-) -> tuple[list[FeishuTask], list[FeishuTask], list[tuple[FeishuTask, dict[str, Any]]]]:
+) -> tuple[list[FeishuTask], list[FeishuTask], list[tuple[FeishuTask, dict[str, Any]]], list[dict[str, Any]]]:
     """Compare local tasks with remote records.
 
     Args:
@@ -40,10 +40,11 @@ def compare_tasks_with_records(
         remote_records: List of remote records from Feishu
 
     Returns:
-        Tuple of (new_tasks, unchanged_tasks, modified_tasks)
+        Tuple of (new_tasks, unchanged_tasks, modified_tasks, orphaned_records)
         - new_tasks: Tasks that don't exist in remote
         - unchanged_tasks: Tasks that match exactly with remote
         - modified_tasks: Tasks that exist but have different fields
+        - orphaned_records: Remote records that don't exist in local (will be deleted)
     """
     # Build a map of remote records by task title for quick lookup
     remote_map: dict[str, dict[str, Any]] = {}
@@ -52,9 +53,13 @@ def compare_tasks_with_records(
         if task_key:
             remote_map[task_key] = record
 
+    # Build a set of local task titles for quick lookup
+    local_task_titles = {task.task for task in local_tasks}
+
     new_tasks: list[FeishuTask] = []
     unchanged_tasks: list[FeishuTask] = []
     modified_tasks: list[tuple[FeishuTask, dict[str, Any]]] = []
+    orphaned_records: list[dict[str, Any]] = []
 
     for task in local_tasks:
         if task.task not in remote_map:
@@ -66,13 +71,19 @@ def compare_tasks_with_records(
             else:
                 modified_tasks.append((task, remote_record))
 
-    return new_tasks, unchanged_tasks, modified_tasks
+    # Find orphaned records (exist in remote but not in local)
+    for task_title, record in remote_map.items():
+        if task_title not in local_task_titles:
+            orphaned_records.append(record)
+
+    return new_tasks, unchanged_tasks, modified_tasks, orphaned_records
 
 
 def print_diff_preview(
     new_tasks: list[FeishuTask],
     unchanged_tasks: list[FeishuTask],
     modified_tasks: list[tuple[FeishuTask, dict[str, Any]]],
+    orphaned_records: list[dict[str, Any]],
     total_local: int,
     total_remote: int,
 ) -> None:
@@ -106,6 +117,12 @@ def print_diff_preview(
                 new_priority = task.priority or "(无)"
                 print(f"     优先级: {old_priority} → {new_priority}")
 
+    # Orphaned records (to be deleted)
+    if orphaned_records:
+        print(f"\n🔴 删除任务 ({len(orphaned_records)} 个) - 远程比本地多出的任务:")
+        for record in orphaned_records:
+            print(f"   - [{record.get('Status', '')}] {record.get('Task', '')}")
+
     # Unchanged tasks
     if unchanged_tasks:
         print(f"\n⚪ 未变更任务 ({len(unchanged_tasks)} 个):")
@@ -113,7 +130,8 @@ def print_diff_preview(
             print(f"   = [{task.status}] {task.task}")
 
     print(f"\n{'='*60}")
-    print(f"总结: {len(new_tasks)} 新增, {len(modified_tasks)} 变更, {len(unchanged_tasks)} 未变更")
+    delete_info = f", {len(orphaned_records)} 删除" if orphaned_records else ""
+    print(f"总结: {len(new_tasks)} 新增, {len(modified_tasks)} 变更{delete_info}, {len(unchanged_tasks)} 未变更")
     print(f"{'='*60}\n")
 
 
@@ -213,15 +231,16 @@ remote:
         return False
 
     # Compare local tasks with remote records
-    new_tasks, unchanged_tasks, modified_tasks = compare_tasks_with_records(tasks, remote_records)
+    new_tasks, unchanged_tasks, modified_tasks, orphaned_records = compare_tasks_with_records(tasks, remote_records)
 
     # Print diff preview
-    print_diff_preview(new_tasks, unchanged_tasks, modified_tasks, len(tasks), len(remote_records))
+    print_diff_preview(new_tasks, unchanged_tasks, modified_tasks, orphaned_records, len(tasks), len(remote_records))
 
     # Calculate tasks to actually push (new + modified)
     tasks_to_push = new_tasks + [task for task, _ in modified_tasks]
 
-    if not tasks_to_push:
+    # Check if there's anything to do
+    if not tasks_to_push and not orphaned_records:
         print("No changes to push. All tasks are already in sync.")
         return True
 
@@ -229,6 +248,8 @@ remote:
     print(f"即将推送 {len(tasks_to_push)} 个任务到飞书表格:")
     print(f"  - 新增: {len(new_tasks)} 个")
     print(f"  - 变更: {len(modified_tasks)} 个")
+    if orphaned_records:
+        print(f"  - 删除: {len(orphaned_records)} 个 (以本地为准，删除远程多余任务)")
     response = input("\n确认执行? (y/N): ").strip().lower()
     if response not in ("y", "yes"):
         print("已取消推送。")
@@ -295,6 +316,23 @@ remote:
         except Exception as e:
             print(f"✗ 更新任务 '{task.task}' 时出错: {e}")
             fail_count += 1
+
+    # 3. Delete orphaned records (remote records that don't exist locally)
+    if orphaned_records:
+        print(f"\n删除 {len(orphaned_records)} 个远程多余任务...")
+        orphaned_record_ids = [record.get("record_id") for record in orphaned_records if record.get("record_id")]
+
+        if orphaned_record_ids:
+            try:
+                if bot.batch_delete(orphaned_record_ids):
+                    print(f"✓ 成功删除 {len(orphaned_record_ids)} 个远程任务")
+                    success_count += len(orphaned_record_ids)
+                else:
+                    print(f"✗ 删除 {len(orphaned_record_ids)} 个远程任务失败")
+                    fail_count += len(orphaned_record_ids)
+            except Exception as e:
+                print(f"✗ 删除远程任务时出错: {e}")
+                fail_count += len(orphaned_record_ids)
 
     # Summary
     if fail_count == 0:

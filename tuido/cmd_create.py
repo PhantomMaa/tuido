@@ -3,10 +3,11 @@
 from pathlib import Path
 
 
-SAMPLE_CONTENT = """# TUIDO
----
+SAMPLE_CONTENT = """---
 theme: textual-dark
 ---
+
+# TUIDO
 
 ## Todo
 - Implement user authentication #feature !P1
@@ -17,9 +18,6 @@ theme: textual-dark
 
 ## In Progress
 - Design database schema #backend
-
-## Blocked
-- Deploy to production #devops !P0
 
 ## Done
 - Initial project setup #setup

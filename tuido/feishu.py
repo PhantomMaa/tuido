@@ -119,6 +119,34 @@ class FeishuTable:
             logger.error(f"更新表格记录失败: {e}")
             return False
 
+    def batch_delete(self, record_ids: list[str]) -> bool:
+        """Delete multiple records from the table in batch.
+
+        Args:
+            record_ids: List of record IDs to delete
+
+        Returns:
+            True if successful, False otherwise
+        """
+        if not record_ids:
+            return True
+
+        payload = {"records": record_ids}
+
+        try:
+            endpoint = f"/bitable/v1/apps/{self.table_app_token}/tables/{self.table_id}/records/batch_delete"
+            response = self._make_request("POST", endpoint, json=payload)
+            result = response.json()
+            if result.get("code") != 0:
+                logger.error(f"批量删除表格记录失败: {result.get('msg')}")
+                return False
+
+            return True
+
+        except Exception as e:
+            logger.error(f"批量删除表格记录失败: {e}")
+            return False
+
     def fetch_records(self, table_view_id: str, field_names: list[str], page_size: int = 100, page_token: str | None = None) -> dict[str, Any]:
         """
         获取表格记录

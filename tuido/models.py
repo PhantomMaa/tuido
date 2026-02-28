@@ -256,9 +256,9 @@ class Board:
             columns_data[status].append(task)
 
         # Define column order - common status values
-        # We'll keep the order: Todo -> In Progress -> Review -> Blocked -> Done
+        # We'll keep the order: Todo -> In Progress -> Review -> Done
         # Any other statuses will be appended after these
-        predefined_order = ["Todo", "In Progress", "Review", "Blocked", "Done"]
+        predefined_order = ["Todo", "In Progress", "Review", "Done"]
 
         # Build ordered columns dict
         ordered_columns: dict[str, list[Task]] = {}
