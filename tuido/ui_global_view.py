@@ -115,11 +115,12 @@ Note: This is a read-only global view. Tasks cannot be moved or edited.
 
     def action_change_theme(self) -> None:
         """Cycle through available themes."""
-        # Get current theme from config or board settings
-        if self.config and self.config.theme:
+        # Get current theme from board settings (priority) or config
+        current = self.board.settings.get("theme")
+        if not current and self.config and self.config.theme:
             current = self.config.theme
-        else:
-            current = self.board.settings.get("theme", "dracula")
+        if not current:
+            current = "dracula"
 
         try:
             idx = THEMES.index(current)
