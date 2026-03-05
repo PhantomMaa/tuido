@@ -50,11 +50,6 @@ class TuidoGroup(click.Group):
 @click.group(cls=TuidoGroup, invoke_without_command=True)
 @click.version_option(version="0.1.0", prog_name="tuido")
 @click.option(
-    "--create",
-    is_flag=True,
-    help="Create a sample TODO.md if it doesn't exist",
-)
-@click.option(
     "--path",
     "target_path",
     default=".",
@@ -62,24 +57,17 @@ class TuidoGroup(click.Group):
     help="Path to TODO.md or directory (default: current directory)",
 )
 @click.pass_context
-def cli(ctx, create, target_path):
+def cli(ctx, target_path):
     """A TUI Kanban board for TODO.md files.
-
     \b
     Examples:
         tuido .              # Open TUI with current directory's TODO.md
-        tuido /path/to/proj  # Open TUI with specified project's TODO.md
+        tuido create         # Create a sample TODO.md
         tuido list           # List all tasks
         tuido push           # Push tasks to Feishu
         tuido pull           # Pull tasks from Feishu
         tuido global-view    # Show global view from Feishu
     """
-    # Handle --create flag
-    if create:
-        todo_file = util.find_todo_file(target_path.resolve())
-        run_create_command(todo_file)
-        ctx.exit()
-
     # If no subcommand is invoked, open TUI
     if ctx.invoked_subcommand is None:
         _open_tui(target_path.resolve())
@@ -92,7 +80,7 @@ def _open_tui(path: Path) -> None:
     if not todo_file.exists():
         click.echo(f"Error: TODO.md not found at {todo_file}", err=True)
         click.echo("Use 'tuido create' to create a sample file.", err=True)
-        raise click.Exit(1)
+        raise SystemExit(1)
 
     board = parse_todo_file(todo_file)
     app = TuidoApp(board, todo_file)
@@ -130,7 +118,7 @@ def list_command(path, status, tag, priority):
     if not todo_file.exists():
         click.echo(f"Error: TODO.md not found at {todo_file}", err=True)
         click.echo("Use 'tuido create' to create a sample file.", err=True)
-        raise click.Exit(1)
+        raise SystemExit(1)
 
     board = parse_todo_file(todo_file)
     run_list_command(board, status=status, tag=tag, priority=priority)
@@ -145,11 +133,11 @@ def push_command(path):
     if not todo_file.exists():
         click.echo(f"Error: TODO.md not found at {todo_file}", err=True)
         click.echo("Use 'tuido create' to create a sample file.", err=True)
-        raise click.Exit(1)
+        raise SystemExit(1)
 
     board = parse_todo_file(todo_file)
     exit_code = run_push_command(board, todo_file)
-    raise click.Exit(exit_code)
+    raise SystemExit(exit_code)
 
 
 @cli.command(name="pull")
@@ -161,11 +149,11 @@ def pull_command(path):
     if not todo_file.exists():
         click.echo(f"Error: TODO.md not found at {todo_file}", err=True)
         click.echo("Use 'tuido create' to create a sample file.", err=True)
-        raise click.Exit(1)
+        raise SystemExit(1)
 
     board = parse_todo_file(todo_file)
     exit_code = run_pull_command(board, todo_file)
-    raise click.Exit(exit_code)
+    raise SystemExit(exit_code)
 
 
 @cli.command(name="global-view")
