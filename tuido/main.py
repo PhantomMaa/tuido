@@ -1,142 +1,196 @@
-"""Command line interface for tuido."""
+"""Command line interface for tuido using Click."""
 
-import argparse
 from pathlib import Path
 
-from tuido.ui import TuidoApp
-from tuido.parser import parse_todo_file
+import click
+
 from tuido.cmd_create import run_create_command
-from tuido.cmd_push import run_push_command
-from tuido.cmd_pull import run_pull_command
 from tuido.cmd_global_view import run_global_view_command
 from tuido.cmd_list import run_list_command
+from tuido.cmd_pull import run_pull_command
+from tuido.cmd_push import run_push_command
+from tuido.parser import parse_todo_file
+from tuido.ui import TuidoApp
 from tuido import util
 
 
-def create_parser() -> argparse.ArgumentParser:
-    """Create and configure the argument parser."""
-    parser = argparse.ArgumentParser(
-        prog="tuido",
-        description="A TUI Kanban board for TODO.md files",
-    )
-
-    # Global flags
-    parser.add_argument(
-        "--version",
-        action="version",
-        version="%(prog)s 0.1.0",
-    )
-    parser.add_argument(
-        "--create",
-        action="store_true",
-        help="Create a sample TODO.md if it doesn't exist",
-    )
-
-    # Subcommands
-    subparsers = parser.add_subparsers(dest="command", help="Available commands")
-
-    # list command: tuido list [--status]
-    list_parser = subparsers.add_parser(
-        "list",
-        help="List tasks from TODO.md",
-        description="List all tasks or filter by status, tags, priority, etc.",
-    )
-    list_parser.add_argument(
-        "--status",
-        type=str,
-        help="Filter tasks by status (column name, e.g., 'In Progress')",
-    )
-    list_parser.add_argument(
-        "--tag",
-        type=str,
-        help="Filter tasks by tag (e.g., 'feature')",
-    )
-    list_parser.add_argument(
-        "--priority",
-        type=str,
-        help="Filter tasks by priority (e.g., 'P0', 'P1')",
-    )
-
-    # push command: tuido push
-    subparsers.add_parser(
-        "push",
-        help="Push tasks to Feishu table (requires remote config in TODO.md)",
-        description="Push local tasks to Feishu table.",
-    )
-
-    # pull command: tuido pull
-    subparsers.add_parser(
-        "pull",
-        help="Pull tasks from Feishu table (requires remote config in TODO.md)",
-        description="Pull remote tasks from Feishu table and update local TODO.md.",
-    )
-
-    # global-view command: tuido global-view
-    subparsers.add_parser(
-        "global-view",
-        help="Show global view of all projects from Feishu table",
-        description="Fetch all tasks from Feishu and display in TUI (read-only).",
-    )
-
-    return parser
+# Shared path argument
+path_argument = click.argument(
+    "path",
+    required=False,
+    default=".",
+    type=click.Path(exists=False, path_type=Path),
+)
 
 
-def main():
-    """Main entry point."""
-    parser = create_parser()
-    args = parser.parse_args()
+class TuidoGroup(click.Group):
+    """Custom group that treats unknown commands as paths for TUI opening."""
 
-    # Resolve the path
-    target_path = Path(".").resolve()
-    todo_file = util.find_todo_file(target_path)
+    def get_command(self, ctx, cmd_name):
+        # First try to get the command normally
+        cmd = super().get_command(ctx, cmd_name)
+        if cmd is not None:
+            return cmd
 
+        # If cmd_name looks like a path (starts with . or / or ~), treat as 'open'
+        # Return None to let Click handle the error, but we'll intercept in main()
+        return None
+
+    def resolve_command(self, ctx, args):
+        # Check if first arg is a path rather than a command
+        if args and args[0] not in self.commands and not args[0].startswith("-"):
+            # Check if it looks like a path
+            first_arg = args[0]
+            if first_arg in (".", "./", "../") or first_arg.startswith(("/", "~", ".")):
+                # Treat as open command with path
+                return super().resolve_command(ctx, ["open"] + args)
+        return super().resolve_command(ctx, args)
+
+
+@click.group(cls=TuidoGroup, invoke_without_command=True)
+@click.version_option(version="0.1.0", prog_name="tuido")
+@click.option(
+    "--create",
+    is_flag=True,
+    help="Create a sample TODO.md if it doesn't exist",
+)
+@click.option(
+    "--path",
+    "target_path",
+    default=".",
+    type=click.Path(exists=False, path_type=Path),
+    help="Path to TODO.md or directory (default: current directory)",
+)
+@click.pass_context
+def cli(ctx, create, target_path):
+    """A TUI Kanban board for TODO.md files.
+
+    \b
+    Examples:
+        tuido .              # Open TUI with current directory's TODO.md
+        tuido /path/to/proj  # Open TUI with specified project's TODO.md
+        tuido list           # List all tasks
+        tuido push           # Push tasks to Feishu
+        tuido pull           # Pull tasks from Feishu
+        tuido global-view    # Show global view from Feishu
+    """
     # Handle --create flag
-    if args.create:
+    if create:
+        todo_file = util.find_todo_file(target_path.resolve())
         run_create_command(todo_file)
-        return
+        ctx.exit()
 
-    # Handle subcommands
-    if args.command == "global-view":
-        # global-view 不需要本地文件，直接执行
-        run_global_view_command()
-        return
+    # If no subcommand is invoked, open TUI
+    if ctx.invoked_subcommand is None:
+        _open_tui(target_path.resolve())
 
-    # Check if file exists for other commands
+
+def _open_tui(path: Path) -> None:
+    """Open the TUI with the given path."""
+    todo_file = util.find_todo_file(path)
+
     if not todo_file.exists():
-        print(f"Error: TODO.md not found at {todo_file}")
-        print("Use --create to create a sample file.")
-        return
-
-    # Parse the todo file for commands that need it
-    if args.command not in ("list", "push", "pull"):
-        print(f"Error: Unknown command '{args.command}'")
-        return
-
-    board = parse_todo_file(todo_file)
-    if args.command == "list":
-        # list 子命令
-        run_list_command(board, status=args.status, tag=args.tag, priority=args.priority)
-        return
-
-    if args.command == "push":
-        # push 子命令
-        exit_code = run_push_command(board, todo_file)
-        return exit_code
-
-    if args.command == "pull":
-        # pull 子命令
-        exit_code = run_pull_command(board, todo_file)
-        return exit_code
-
-    # No subcommand: launch the TUI app (default behavior)
-    if not todo_file.exists():
-        print(f"Error: TODO.md not found at {todo_file}")
-        print("Use --create to create a sample file.")
-        return
+        click.echo(f"Error: TODO.md not found at {todo_file}", err=True)
+        click.echo("Use 'tuido create' to create a sample file.", err=True)
+        raise click.Exit(1)
 
     board = parse_todo_file(todo_file)
     app = TuidoApp(board, todo_file)
     app.run()
+
+
+@cli.command(name="open")
+@path_argument
+def open_command(path):
+    """Open TUI Kanban board (default behavior)."""
+    _open_tui(path.resolve())
+
+
+@cli.command(name="list")
+@path_argument
+@click.option(
+    "--status",
+    type=str,
+    help="Filter tasks by status (column name, e.g., 'In Progress')",
+)
+@click.option(
+    "--tag",
+    type=str,
+    help="Filter tasks by tag (e.g., 'feature')",
+)
+@click.option(
+    "--priority",
+    type=str,
+    help="Filter tasks by priority (e.g., 'P0', 'P1')",
+)
+def list_command(path, status, tag, priority):
+    """List tasks from TODO.md."""
+    todo_file = util.find_todo_file(path.resolve())
+
+    if not todo_file.exists():
+        click.echo(f"Error: TODO.md not found at {todo_file}", err=True)
+        click.echo("Use 'tuido create' to create a sample file.", err=True)
+        raise click.Exit(1)
+
+    board = parse_todo_file(todo_file)
+    run_list_command(board, status=status, tag=tag, priority=priority)
+
+
+@cli.command(name="push")
+@path_argument
+def push_command(path):
+    """Push tasks to Feishu table (requires remote config in TODO.md)."""
+    todo_file = util.find_todo_file(path.resolve())
+
+    if not todo_file.exists():
+        click.echo(f"Error: TODO.md not found at {todo_file}", err=True)
+        click.echo("Use 'tuido create' to create a sample file.", err=True)
+        raise click.Exit(1)
+
+    board = parse_todo_file(todo_file)
+    exit_code = run_push_command(board, todo_file)
+    raise click.Exit(exit_code)
+
+
+@cli.command(name="pull")
+@path_argument
+def pull_command(path):
+    """Pull tasks from Feishu table (requires remote config in TODO.md)."""
+    todo_file = util.find_todo_file(path.resolve())
+
+    if not todo_file.exists():
+        click.echo(f"Error: TODO.md not found at {todo_file}", err=True)
+        click.echo("Use 'tuido create' to create a sample file.", err=True)
+        raise click.Exit(1)
+
+    board = parse_todo_file(todo_file)
+    exit_code = run_pull_command(board, todo_file)
+    raise click.Exit(exit_code)
+
+
+@cli.command(name="global-view")
+@click.option(
+    "--push",
+    "push_flag",
+    is_flag=True,
+    help="Push global view tasks to Feishu table",
+)
+def global_view_command(push_flag):
+    """Show global view of all projects from Feishu table."""
+    run_global_view_command(push=push_flag)
+
+
+@cli.command(name="create")
+@path_argument
+def create_command(path):
+    """Create a sample TODO.md if it doesn't exist."""
+    todo_file = util.find_todo_file(path.resolve())
+    run_create_command(todo_file)
+
+
+def main():
+    """Main entry point."""
+    cli()
 
 
 if __name__ == "__main__":

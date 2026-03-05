@@ -239,9 +239,6 @@ feishu:
 ```bash
 # 推送当前目录 TODO.md 的任务到飞书
 tuido push
-
-# 推送指定路径的 TODO.md
-tuido /path/to/project push
 ```
 
 **要求**：

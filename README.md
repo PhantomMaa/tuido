@@ -32,9 +32,6 @@ pip install -e .
 # Open TODO.md in current directory
 tuido .
 
-# Open specific TODO.md file
-tuido path/to/TODO.md
-
 # Create a sample TODO.md file
 tuido --create
 
