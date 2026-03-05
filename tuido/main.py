@@ -85,7 +85,7 @@ def main():
             ## For global view, --push will update all projects in the Feishu table
             return run_push_command(board, global_todo_file)
 
-        app = TuidoApp(board, global_todo_file)
+        app = TuidoApp(board, global_todo_file, is_global_view=True)
         app.run()
         return
 

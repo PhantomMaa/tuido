@@ -507,9 +507,10 @@ class TuidoApp(App):
         Binding("t", "change_theme", "Theme"),
     ]
 
-    def __init__(self, board: Board, file_path, **kwargs):
+    def __init__(self, board: Board, file_path, is_global_view: bool = False, **kwargs):
         self.board = board
         self.file_path = file_path
+        self.is_global_view = is_global_view
         self._kanban_board = None
         super().__init__(**kwargs)
 
@@ -595,11 +596,20 @@ class TuidoApp(App):
         self.board.settings["theme"] = next_theme
         self.theme = next_theme
 
-        # Auto-save settings
-        from .parser import save_todo_file
+        if self.is_global_view:
+            # Global view: save theme to global config
+            from .config import save_global_theme
+            try:
+                save_global_theme(next_theme)
+                self.notify(f"Theme changed to: {next_theme}")
+            except Exception as e:
+                self.notify(f"Theme changed but failed to save: {e}", severity="warning")
+        else:
+            # Local view: auto-save settings to file
+            from .parser import save_todo_file
 
-        try:
-            save_todo_file(self.file_path, self.board)
-            self.notify(f"Theme changed to: {next_theme}")
-        except Exception as e:
-            self.notify(f"Theme changed but failed to save: {e}", severity="warning")
+            try:
+                save_todo_file(self.file_path, self.board)
+                self.notify(f"Theme changed to: {next_theme}")
+            except Exception as e:
+                self.notify(f"Theme changed but failed to save: {e}", severity="warning")
