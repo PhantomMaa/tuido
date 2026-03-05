@@ -13,6 +13,7 @@ remote:
 - push、pull 命令增加对二级任务的支持 ~2026-02-28T13:22
 
 ## In Progress
+- global-view 模式重新设计，读取自 /tmp/TODO_global.md 文件 ~2026-03-05T12:29
 
 ## Done
 - 为每个任务增加记录最后更新时间的功能 ~2026-02-28T17:16

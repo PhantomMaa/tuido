@@ -174,11 +174,6 @@ def print_pull_preview(
         for task in deleted_tasks:
             print(f"   - [{task.column}] {task.title}")
 
-    # Unchanged count
-    unchanged_count = total_local - len(deleted_tasks) - len(modified_tasks)
-    if unchanged_count > 0:
-        print(f"\n⚪ 未变更任务 ({unchanged_count} 个)")
-
     print(f"\n{'='*60}")
     print(f"总结: {len(new_tasks)} 新增, {len(modified_tasks)} 变更, {len(deleted_tasks)} 删除")
     print(f"{'='*60}\n")
@@ -316,14 +311,10 @@ remote:
         return False, board
 
     # Compare remote with local
-    new_tasks, modified_tasks, deleted_tasks = compare_remote_with_local(
-        remote_records, local_tasks
-    )
+    new_tasks, modified_tasks, deleted_tasks = compare_remote_with_local(remote_records, local_tasks)
 
     # Print diff preview
-    print_pull_preview(
-        new_tasks, modified_tasks, deleted_tasks, len(remote_records), len(local_tasks)
-    )
+    print_pull_preview(new_tasks, modified_tasks, deleted_tasks, len(remote_records), len(local_tasks))
 
     # In dry-run mode, just return after preview
     if dry_run:

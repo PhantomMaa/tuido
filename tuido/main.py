@@ -76,7 +76,18 @@ def main():
 
     # Handle --global-view command
     if args.global_view:
-        return run_global_view_command()
+        global_todo_file = run_global_view_command()
+        if global_todo_file is None:
+            return
+
+        board = parse_todo_file(global_todo_file)
+        if args.push:
+            ## For global view, --push will update all projects in the Feishu table
+            return run_push_command(board, global_todo_file)
+
+        app = TuidoApp(board, global_todo_file)
+        app.run()
+        return
 
     # Check if file exists
     if not todo_file.exists():

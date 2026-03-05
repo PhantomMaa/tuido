@@ -282,5 +282,5 @@ class Board:
         return cls(
             title="Global Task View",
             columns=ordered_columns,
-            settings={"theme": "dracula", "read_only": True},
+            settings={"theme": "dracula"},
         )

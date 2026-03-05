@@ -130,12 +130,6 @@ def print_diff_preview(
         for record in orphaned_records:
             print(f"   - [{record.get('Status', '')}] {record.get('Task', '')}")
 
-    # Unchanged tasks
-    if unchanged_tasks:
-        print(f"\n⚪ 未变更任务 ({len(unchanged_tasks)} 个):")
-        for task in unchanged_tasks:
-            print(f"   = [{task.status}] {task.task}")
-
     print(f"\n{'='*60}")
     delete_info = f", {len(orphaned_records)} 删除" if orphaned_records else ""
     print(f"总结: {len(new_tasks)} 新增, {len(modified_tasks)} 变更{delete_info}, {len(unchanged_tasks)} 未变更")
@@ -255,7 +249,8 @@ remote:
     # Ask for confirmation
     print(f"即将推送 {len(tasks_to_push)} 个任务到飞书表格:")
     print(f"  - 新增: {len(new_tasks)} 个")
-    print(f"  - 变更: {len(modified_tasks)} 个")
+    if modified_tasks:
+        print(f"  - 变更: {len(modified_tasks)} 个(以本地为准，更新远程任务)")
     if orphaned_records:
         print(f"  - 删除: {len(orphaned_records)} 个 (以本地为准，删除远程多余任务)")
     response = input("\n确认执行? (y/N): ").strip().lower()

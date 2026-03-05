@@ -7,6 +7,7 @@ def parse_task_content(content: str) -> dict:
     """Parse task content to extract metadata."""
     result = {
         "title": content,
+        "project": None,
         "tags": [],
         "priority": None,
         "updated_at": None,
@@ -183,6 +184,7 @@ def parse_todo_file(file_path: Path) -> Board:
                 tags=metadata["tags"],
                 priority=metadata["priority"],
                 level=level,
+                project=metadata["project"],
                 updated_at=metadata["updated_at"],
             )
             
@@ -245,6 +247,8 @@ def save_todo_file(file_path: Path, board: Board) -> None:
         """Format a task as markdown with proper indentation."""
         indent = "  " * indent_level
         content = task.title
+        if task.project:
+            content += f" [{task.project}]"
         if task.tags:
             content += " " + " ".join(f"#{tag}" for tag in task.tags)
         if task.priority:

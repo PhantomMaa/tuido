@@ -17,8 +17,7 @@ tuido/
 ├── main.py               # CLI 入口 (argparse)
 ├── models.py             # 数据模型: Task, Board, FeishuTask, FeishuConfig
 ├── parser.py             # TODO.md 读写逻辑
-├── ui_local.py           # 本地模式 TUI 实现
-├── ui_global_view.py     # 全局视图 TUI 实现
+├── ui_local.py           # TUI 实现 (本地和全局视图共用)
 ├── feishu.py             # 飞书 API 封装
 ├── config.py             # 全局配置加载 (~/.config/tuido/config.yaml)
 ├── cmd_create.py         # --create 命令实现
@@ -112,11 +111,7 @@ remote:
 - `TaskCard`: 单个任务组件 (**重要: 使用 `task_obj`, 不要用 `task`**)
 - `KanbanColumn`: 列容器，包含标题和任务列表
 - `KanbanBoard`: 本地看板主组件，处理导航、按键绑定、看板渲染
-- `TuidoApp`: 本地模式主应用
-
-### ui_global_view.py
-- `GlobalViewBoard`: 继承自 KanbanBoard，禁用移动操作
-- `GlobalViewApp`: 全局视图只读应用
+- `TuidoApp`: 主应用，支持本地模式和全局视图模式
 
 ## 键盘快捷键
 
@@ -226,10 +221,14 @@ feishu:
   bot_app_secret: your_bot_app_secret
 ```
 
+**实现方式：**
+全局视图模式首先从飞书获取所有任务，生成临时文件 `/tmp/TODO_global.md`，然后使用与本地模式相同的 TUI (`TuidoApp`) 进行展示。
+
 **特性：**
 - 只读视图，不支持编辑和移动任务
 - 任务标题显示格式：`[项目名] 任务名`
 - 按状态自动分栏（Todo, In Progress, Review, Blocked, Done）
+- 主题切换会自动保存到全局配置
 
 ## 飞书同步
 
