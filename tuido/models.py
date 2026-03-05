@@ -275,7 +275,7 @@ class Board(BaseModel):
             column=column,
             updated_at=datetime.now().strftime("%Y-%m-%dT%H:%M"),
         )
-        self.columns[column].append(task)
+        self.columns[column].insert(0, task)
         return task
 
     @classmethod
