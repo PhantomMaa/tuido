@@ -617,14 +617,17 @@ class TuidoApp(App):
                 task = self.board.add_task(task_title, current_column)
                 if task:
                     self._kanban_board.refresh_board()
-                    # Select the newly added task
-                    all_cards = self._kanban_board.get_all_task_cards()
-                    for i, card in enumerate(all_cards):
-                        if card.task_obj == task:
-                            self._kanban_board.selected_task_index = i
-                            break
 
-                    self._kanban_board.update_selection()
+                    # Defer selection update until after DOM refresh
+                    def select_new_task_after_refresh():
+                        all_cards = self._kanban_board.get_all_task_cards()
+                        for i, card in enumerate(all_cards):
+                            if card.task_obj == task:
+                                self._kanban_board.selected_task_index = i
+                                break
+                        self._kanban_board.update_selection()
+
+                    self._kanban_board.call_after_refresh(select_new_task_after_refresh)
                     self.notify(f"Added: {task_title}")
                 else:
                     self.notify(f"Failed to add task to column: {current_column}", severity="error")
