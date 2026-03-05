@@ -325,6 +325,27 @@ class KanbanBoard(Vertical):
         card = all_cards[self.selected_task_index]
         return card, card.task_obj.column
 
+    def delete_task(self) -> Task | None:
+        """Delete the currently selected task. Returns the deleted task or None."""
+        card, current_column = self.get_selected_task()
+        if not card or not current_column:
+            return None
+
+        task = card.task_obj
+        if self.board.delete_task(task):
+            # Refresh the board
+            self.refresh_board()
+
+            # Adjust selection index if needed
+            all_cards = self.get_all_task_cards()
+            if all_cards:
+                if self.selected_task_index >= len(all_cards):
+                    self.selected_task_index = len(all_cards) - 1
+                self.call_after_refresh(self.update_selection)
+
+            return task
+        return None
+
     def move_task(self, direction: str) -> None:
         """Move task between columns or reorder within column with Shift+Direction."""
         card, current_column = self.get_selected_task()
@@ -484,6 +505,7 @@ class TuidoApp(App):
         Binding("shift+l", "move_task('right')", "Move Right", show=False),
         Binding("?", "help", "Help"),
         Binding("t", "change_theme", "Theme"),
+        Binding("d", "delete_task", "Delete"),
     ]
 
     def __init__(self, board: Board, file_path, is_global_view: bool = False, **kwargs):
@@ -512,6 +534,15 @@ class TuidoApp(App):
         """Move task to adjacent column or reorder."""
         if self._kanban_board:
             self._kanban_board.move_task(direction)
+
+    def action_delete_task(self) -> None:
+        """Delete the currently selected task."""
+        if self._kanban_board:
+            task = self._kanban_board.delete_task()
+            if task:
+                self.notify(f"Deleted: {task.title}")
+            else:
+                self.notify("No task selected", severity="warning")
 
     def action_refresh(self) -> None:
         """Refresh the board."""
@@ -557,6 +588,7 @@ class TuidoApp(App):
 - s - Save to file
 - t - Change theme
 - q - Quit
+- d - Delete task
 - ? - Show this help
 """
         self.notify(help_text, title="Help", timeout=10)

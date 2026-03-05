@@ -10,9 +10,7 @@ remote:
 # TUIDO
 
 ## Todo
-- 增加 `list --status "In Progress"` 命令，输出按照 status 过滤后的结果 ~2026-03-05T17:12
 - tui 显示，对标题增加行内样式，支持代码高亮、加粗、删除等样式 !P2 ~2026-03-05T16:49
-- push、pull 命令增加对二级任务的支持 ~2026-03-05T16:49
 - 修复 `--global-view --push` 时，对 project 解析的问题，导致的比对错误 #bugfix ~2026-03-05T17:12
 
 ## In Progress
@@ -20,6 +18,7 @@ remote:
 - 增加 'd' 按键操作的支持，在 tui 下删除任务 !P2 ~2026-03-05T23:12
 
 ## Done
+- 增加 `list --status "In Progress"` 命令，输出按照 status 过滤后的结果 ~2026-03-05T23:17
 - global-view 模式重新设计，读取自 /tmp/TODO_global.md 文件 ~2026-03-05T16:41
 - 为每个任务增加记录最后更新时间的功能 ~2026-02-28T17:16
 - `--global-view` 模式下，也支持切换主题。这个设置保存到 `~/.config/tui/config.yaml` 里 ~2026-02-24T13:28

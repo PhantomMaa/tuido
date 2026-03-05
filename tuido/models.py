@@ -255,6 +255,14 @@ class Board(BaseModel):
 
         return True
 
+    def delete_task(self, task: Task) -> bool:
+        """Delete a task from the board. Returns True if deleted."""
+        tasks = self.columns.get(task.column, [])
+        if task in tasks:
+            tasks.remove(task)
+            return True
+        return False
+
     @classmethod
     def from_feishu_records(cls, records: list[dict[str, str]]) -> "Board":
         """Create a Board from Feishu table records.
