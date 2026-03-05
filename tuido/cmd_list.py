@@ -20,15 +20,8 @@ def run_list_command(
     # Collect all tasks from board
     all_tasks: list[Task] = []
     
-    def collect_tasks(task_list: list[Task]):
-        """Recursively collect tasks including subtasks."""
-        for task in task_list:
-            all_tasks.append(task)
-            if task.subtasks:
-                collect_tasks(task.subtasks)
-    
     for column_tasks in board.columns.values():
-        collect_tasks(column_tasks)
+        all_tasks.extend(column_tasks)
     
     # Apply filters
     filtered_tasks = all_tasks

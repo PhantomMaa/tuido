@@ -46,21 +46,15 @@ class TaskCard(Static):
         border: solid $accent;
         background: $surface;
     }
-    TaskCard.subtask {
-        margin-left: 2;
-    }
     """
 
-    def __init__(self, task_obj: Task, is_subtask: bool = False, **kwargs):
+    def __init__(self, task_obj: Task, **kwargs):
         self.task_obj = task_obj
         self.selected = False
-        self.is_subtask = is_subtask
         super().__init__(**kwargs)
 
     def on_mount(self) -> None:
         """Mount and render the task."""
-        if self.is_subtask:
-            self.add_class("subtask")
         self.update(self.render_task())
 
     def render_task(self) -> Text:
@@ -99,9 +93,7 @@ class TaskCard(Static):
             meta_parts.append(f"[dim]~{date_str}[/dim]")
 
         if meta_parts:
-            # 子任务的元数据增加缩进
-            prefix = "   " if self.is_subtask else ""
-            lines.append(prefix + " ".join(meta_parts))
+            lines.append(" ".join(meta_parts))
 
         return Text.from_markup("\n".join(lines))
 
@@ -153,15 +145,10 @@ class KanbanColumn(Vertical):
     def compose(self) -> ComposeResult:
         yield from []
 
-    def add_task(self, task: Task, is_subtask: bool = False) -> TaskCard:
-        """Add a task to this column, including its subtasks."""
-        card = TaskCard(task, is_subtask=is_subtask)
+    def add_task(self, task: Task) -> TaskCard:
+        """Add a task to this column."""
+        card = TaskCard(task)
         self.mount(card)
-
-        # 递归添加子任务
-        for subtask in task.subtasks:
-            self.add_task(subtask, is_subtask=True)
-
         return card
 
     def clear_tasks(self) -> None:
@@ -345,14 +332,6 @@ class KanbanBoard(Vertical):
             return
 
         if direction in ("left", "right"):
-            # Check if this is a subtask - subtasks cannot be moved independently
-            if card.task_obj.level > 0:
-                # Get the app to show notification
-                app = self.app
-                if app:
-                    app.notify("Subtasks cannot be moved independently. They move with their parent task.", severity="warning", timeout=3)
-                return
-
             # Move between columns
             columns = self.get_visible_columns()
             if current_column not in columns:
@@ -569,10 +548,9 @@ class TuidoApp(App):
 - Shift+← / Shift+H - Move task to left column
 - Shift+→ / Shift+L - Move task to right column
 
-## Reorder Tasks (Within Column / Parent)
+## Reorder Tasks (Within Column)
 - Shift+↑ / Shift+K - Move task up
 - Shift+↓ / Shift+J - Move task down
-  - Works for both top-level tasks and subtasks
 
 ## Actions
 - r - Refresh from file

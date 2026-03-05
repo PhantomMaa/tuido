@@ -135,7 +135,6 @@ def parse_todo_file(file_path: Path) -> Board:
     """Parse a TODO.md file and return a Board.
     
     栏目(Column)从二级标题(##)读取，按文件中的顺序展示。
-    支持层级任务（通过缩进表示）。
     """
     board = Board(title="TODO Board")
 
@@ -152,7 +151,6 @@ def parse_todo_file(file_path: Path) -> Board:
     board.settings = settings
 
     current_column = None
-    parent_stack: list[Task] = []  # 用于跟踪父任务层级
 
     for _, line in enumerate(lines[start_idx:], start_idx + 1):
         stripped = line.strip()
@@ -167,8 +165,6 @@ def parse_todo_file(file_path: Path) -> Board:
             # 确保栏目存在（保留空栏目）
             if column_name not in board.columns:
                 board.columns[column_name] = []
-            # 切换栏目时清空父任务栈
-            parent_stack.clear()
             continue
 
         # Only parse lines starting with '- '
@@ -179,10 +175,6 @@ def parse_todo_file(file_path: Path) -> Board:
                 if current_column not in board.columns:
                     board.columns[current_column] = []
             
-            # 计算层级深度（通过前导空格数）
-            leading_spaces = len(line) - len(line.lstrip())
-            level = leading_spaces // 2  # 每2个空格一个层级
-            
             content = stripped[2:].strip()
             metadata = parse_task_content(content)
 
@@ -191,31 +183,11 @@ def parse_todo_file(file_path: Path) -> Board:
                 column=current_column,
                 tags=metadata["tags"],
                 priority=metadata["priority"],
-                level=level,
                 project=metadata["project"],
                 updated_at=metadata["updated_at"],
             )
             
-            # 处理层级关系
-            # 调整父任务栈到当前层级
-            while len(parent_stack) > level:
-                parent_stack.pop()
-            
-            if level > 0 and parent_stack:
-                # 这是一个子任务
-                parent = parent_stack[-1]
-                task.parent = parent
-                parent.subtasks.append(task)
-            else:
-                # 这是一个顶级任务，清空栈并从当前开始
-                parent_stack.clear()
-            
-            # 将当前任务加入栈（它可能是后续任务的父任务）
-            parent_stack.append(task)
-            
-            # 只将顶级任务加入栏目列表
-            if level == 0:
-                board.columns[current_column].append(task)
+            board.columns[current_column].append(task)
 
     # 如果没有解析到任何栏目，使用默认值
     if not board.columns:
@@ -228,7 +200,6 @@ def save_todo_file(file_path: Path, board: Board) -> None:
     """Save board back to TODO.md file.
 
     按 board.columns 顺序写入栏目，每个栏目下写入对应任务。
-    支持层级任务（通过缩进表示）。
     """
     import yaml
 
@@ -251,9 +222,8 @@ def save_todo_file(file_path: Path, board: Board) -> None:
     lines.append("# TUIDO\n")
     lines.append("\n")
 
-    def format_task(task: Task, indent_level: int = 0) -> str:
-        """Format a task as markdown with proper indentation."""
-        indent = "  " * indent_level
+    def format_task(task: Task) -> str:
+        """Format a task as markdown."""
         content = task.title
         if task.project:
             content += f" [{task.project}]"
@@ -263,21 +233,14 @@ def save_todo_file(file_path: Path, board: Board) -> None:
             content += f" !{task.priority.upper()}"
         if task.updated_at:
             content += f" ~{task.updated_at}"
-        return f"{indent}- {content}"
-    
-    def write_task_with_subtasks(task: Task, indent_level: int = 0) -> list[str]:
-        """递归写入任务及其子任务。"""
-        result = [format_task(task, indent_level) + "\n"]
-        for subtask in task.subtasks:
-            result.extend(write_task_with_subtasks(subtask, indent_level + 1))
-        return result
+        return f"- {content}"
 
     # 按栏目顺序写入（board.columns 是有序 dict）
     for column, tasks in board.columns.items():
         # 即使栏目没有任务也写入空栏目（保留栏目结构）
         lines.append(f"## {column}\n")
         for task in tasks:
-            lines.extend(write_task_with_subtasks(task))
+            lines.append(format_task(task) + "\n")
         lines.append("\n")
 
     # Join lines and strip trailing whitespace to avoid extra blank lines at end

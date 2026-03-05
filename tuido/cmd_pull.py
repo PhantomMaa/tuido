@@ -110,17 +110,11 @@ def compare_remote_with_local(
 
 
 def flatten_tasks(board: Board) -> list[Task]:
-    """Flatten all tasks from board, including subtasks."""
+    """Flatten all tasks from board."""
     all_tasks: list[Task] = []
 
-    def collect_task(task: Task):
-        all_tasks.append(task)
-        for subtask in task.subtasks:
-            collect_task(subtask)
-
     for column_tasks in board.columns.values():
-        for task in column_tasks:
-            collect_task(task)
+        all_tasks.extend(column_tasks)
 
     return all_tasks
 
@@ -220,7 +214,6 @@ def apply_remote_changes(
                     tags=remote_task.tags,
                     priority=remote_task.priority if remote_task.priority else None,
                     updated_at=remote_task.timestamp if remote_task.timestamp else None,
-                    subtasks=task.subtasks,  # Preserve subtasks
                 )
 
                 # Check if column changed

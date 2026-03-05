@@ -184,17 +184,11 @@ remote:
     # Collect all tasks
     local_tasks: list[FeishuTask] = []
 
-    def collect_tasks(column_name: str, task_list: list[Task], parent_title: str = ""):
-        """Recursively collect tasks and their subtasks."""
+    # Iterate through all columns and collect tasks
+    for column_name, task_list in board.columns.items():
         for task in task_list:
-            # Build full title with parent prefix if exists
-            if parent_title:
-                full_title = f"{parent_title} > {task.title}"
-            else:
-                full_title = task.title
-
             feishu_task = FeishuTask(
-                title=full_title,
+                title=task.title,
                 project=project_name,
                 status=column_name,
                 tags=task.tags,
@@ -202,14 +196,6 @@ remote:
                 timestamp=task.updated_at or "",
             )
             local_tasks.append(feishu_task)
-
-            # Recursively collect subtasks
-            if task.subtasks:
-                collect_tasks(column_name, task.subtasks, full_title)
-
-    # Iterate through all columns and collect tasks
-    for column_name, task_list in board.columns.items():
-        collect_tasks(column_name, task_list)
 
     if not local_tasks:
         print("No tasks found to push.")

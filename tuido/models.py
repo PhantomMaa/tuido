@@ -174,9 +174,6 @@ class Task(BaseModel):
     column: str = "Todo"  # 所属栏目名称（对应二级标题）
     tags: list[str] = []
     priority: Optional[str] = None
-    level: int = 0  # 层级深度，0为父任务，1+为子任务
-    parent: Optional["Task"] = None  # 父任务引用
-    subtasks: list["Task"] = []  # 子任务列表
     project: Optional[str] = None  # 项目名称（用于全局视图）
     updated_at: Optional[str] = None  # 最后更新时间，格式: YYYY-MM-DDTHH:MM
 
@@ -209,16 +206,8 @@ class Board(BaseModel):
         return result
 
     def reorder_task(self, task: Task, direction: str) -> bool:
-        """Reorder a task within its column or parent. Returns True if reordered."""
-        # 确定任务所在的列表（栏目列表或父任务的子任务列表）
-        if task.level == 0:
-            # 顶级任务：在 column 列表中
-            tasks = self.columns.get(task.column, [])
-        else:
-            if task.parent is None:
-                return False
-
-            tasks = task.parent.subtasks
+        """Reorder a task within its column. Returns True if reordered."""
+        tasks = self.columns.get(task.column, [])
 
         try:
             current_idx = tasks.index(task)
@@ -264,15 +253,7 @@ class Board(BaseModel):
         else:
             self.columns[new_column].append(task)
 
-        # 递归更新所有子任务的 column 属性
-        self._update_subtask_columns(task, new_column)
         return True
-
-    def _update_subtask_columns(self, task: Task, new_column: str) -> None:
-        """递归更新子任务的 column 属性。"""
-        for subtask in task.subtasks:
-            subtask.column = new_column
-            self._update_subtask_columns(subtask, new_column)
 
     @classmethod
     def from_feishu_records(cls, records: list[dict[str, str]]) -> "Board":
