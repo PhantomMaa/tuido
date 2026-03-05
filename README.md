@@ -113,6 +113,21 @@ The column order follows the order they appear in the file.
 
 Task status is determined by which section (`## Todo`, `## In Progress`, etc.) it belongs to.
 
+### Inline Styling
+
+Task titles support Markdown-style inline formatting in the TUI:
+
+- `**bold**` or `__bold__` - **Bold text**
+- `` `code` `` - `Code text` (cyan color)
+- `~~strikethrough~~` - ~~Strikethrough text~~
+
+Examples:
+```markdown
+- Implement **bold** and `code` support !P1 #ui
+- ~~Deprecated feature~~ will be removed in v2.0
+- **Important:** Check `config.yaml` before running
+```
+
 **Note:** The timestamp is automatically updated when you move or reorder tasks in the TUI, and is synced with Feishu's `Timestamp` field.
 
 ### Subtasks (Hierarchical Tasks)

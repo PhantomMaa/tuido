@@ -1,16 +1,83 @@
 """TUI UI components for tuido."""
 
 from datetime import datetime
-
 from textual.app import App, ComposeResult
 from textual.widgets import Footer, Static, Input, Label
 from textual.containers import Horizontal, Vertical
 from textual.binding import Binding
 from textual.screen import ModalScreen
+import re
 from rich.text import Text
 from rich.markup import escape
-
 from tuido.models import Task, Board
+
+
+def parse_inline_styles(text: str) -> str:
+    """Parse inline markdown styles and convert to Rich markup.
+
+    Supported styles:
+    - **text** or __text__ -> [bold]text[/bold]
+    - `text` -> [cyan]code[/cyan]
+    - ~~text~~ -> [strike]text[/strike]
+
+    Note: This function handles nested styles (e.g., **bold with `code` inside**)
+    and escapes square brackets to prevent Rich from parsing them incorrectly.
+    """
+    import uuid
+
+    placeholders: dict[str, str] = {}
+
+    def protect(s: str) -> str:
+        """Protect a string by replacing with placeholder."""
+        ph = f"\x00{uuid.uuid4().hex}\x00"
+        placeholders[ph] = s
+        return ph
+
+    def restore(s: str) -> str:
+        """Restore all placeholders (recursively to handle nested placeholders)."""
+        while True:
+            new_s = s
+            for ph, val in placeholders.items():
+                new_s = new_s.replace(ph, val)
+            if new_s == s:  # No more replacements
+                break
+            s = new_s
+        return s
+
+    # Step 1: Escape brackets first
+    text = text.replace("[", "[[").replace("]", "]]")
+
+    # Step 2: Process inline code: `code` -> [cyan]code[/cyan]
+    def code_repl(m: re.Match) -> str:
+        inner = m.group(1).replace("[[", "[").replace("]]", "]")
+        return protect(f"[cyan]{escape(inner)}[/cyan]")
+
+    text = re.sub(r"`([^`]+)`", code_repl, text)
+
+    # Step 3: Process bold: **text** or __text__ -> [bold]text[/bold]
+    # Note: We do NOT escape content because it may contain placeholders
+    # that will be restored later
+    def bold_repl(m: re.Match) -> str:
+        inner = m.group(1).replace("[[", "[").replace("]]", "]")
+        return protect(f"[bold]{inner}[/bold]")
+
+    text = re.sub(r"\*\*(.+?)\*\*", bold_repl, text)
+    text = re.sub(r"__(.+?)__", bold_repl, text)
+
+    # Step 4: Process strikethrough: ~~text~~ -> [strike]text[/strike]
+    def strike_repl(m: re.Match) -> str:
+        inner = m.group(1).replace("[[", "[").replace("]]", "]")
+        return protect(f"[strike]{inner}[/strike]")
+
+    text = re.sub(r"~~(.+?)~~", strike_repl, text)
+
+    # Step 5: Restore all protected markup
+    text = restore(text)
+
+    # Step 6: Restore escaped brackets
+    text = text.replace("[[", "[").replace("]]", "]")
+
+    return text
 
 
 THEMES = [
@@ -61,9 +128,9 @@ class TaskCard(Static):
     def render_task(self) -> Text:
         """Render task as Rich text."""
         lines = []
-        # Escape square brackets to prevent Rich from parsing them as markup
-        safe_title = escape(self.task_obj.title)
-        lines.append(safe_title)
+        # Parse inline markdown styles (bold, code, strikethrough)
+        styled_title = parse_inline_styles(self.task_obj.title)
+        lines.append(styled_title)
 
         # Metadata line
         meta_parts = []
