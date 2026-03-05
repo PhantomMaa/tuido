@@ -10,9 +10,9 @@ feishu_table_view_id: str
 def _init_feishu_table():
     config = load_global_config()
     global feishu_table_view_id
-    feishu_table_view_id = config.table_view_id
+    feishu_table_view_id = config.remote.view_id
 
-    feishu_table = FeishuTable(config.api_endpoint, config.bot_app_id, config.bot_app_secret, config.table_app_token, config.table_id)
+    feishu_table = FeishuTable(config.remote.feishu_api_endpoint, config.remote.bot_app_id, config.remote.bot_app_secret, config.remote.feishu_table_app_token, config.remote.table_id)
     return feishu_table
 
 

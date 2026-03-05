@@ -8,7 +8,7 @@ from tuido.ui_local import TuidoApp
 from tuido.cmd_create import run_create_command
 from tuido.cmd_push import run_push_command
 from tuido.cmd_pull import run_pull_command
-from tuido.cmd_global_view import run_global_view_command
+from tuido.cmd_global_view import GLOBAL_VIEW_TEMP_FILE, run_global_view_command
 
 
 def find_todo_file(path: Path) -> Path:
@@ -65,6 +65,11 @@ def main():
     )
     args = parser.parse_args()
 
+    # Handle --global-view command
+    if args.global_view:
+        run_global_view_command(args.global_view, args.push)
+        return
+
     # Resolve the path
     target_path = Path(args.path).resolve()
     todo_file = find_todo_file(target_path)
@@ -72,21 +77,6 @@ def main():
     # Create sample file if requested
     if args.create:
         run_create_command(todo_file)
-        return
-
-    # Handle --global-view command
-    if args.global_view:
-        global_todo_file = run_global_view_command()
-        if global_todo_file is None:
-            return
-
-        board = parse_todo_file(global_todo_file)
-        if args.push:
-            ## For global view, --push will update all projects in the Feishu table
-            return run_push_command(board, global_todo_file)
-
-        app = TuidoApp(board, global_todo_file, is_global_view=True)
-        app.run()
         return
 
     # Check if file exists

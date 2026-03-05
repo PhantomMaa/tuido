@@ -2,22 +2,31 @@
 
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Optional, Self
+from typing import Any, Optional, Self
 
 import yaml
+from pydantic import BaseModel, Field
 
 
-@dataclass
-class FeishuConfig:
-    """飞书配置模型，自动从 YAML 配置加载."""
+class RemoteConfig(BaseModel):
+    """飞书配置模型，自动从 YAML 配置加载.
 
-    api_endpoint: str = ""
-    table_app_token: str = ""
-    table_id: str = ""
-    table_view_id: str = ""
-    bot_app_id: str = ""
-    bot_app_secret: str = ""
-    theme: str = "dracula"
+    配置文件格式:
+        remote:
+          api_endpoint: https://fsopen.bytedance.net/open-apis
+          table_app_token: xxx
+          table_id: yyy
+          view_id: zzz
+          bot_app_id: aaa
+          bot_app_secret: bbb
+    """
+
+    feishu_api_endpoint: str = ""
+    feishu_table_app_token: str = ""
+    feishu_table_id: str = ""
+    feishu_table_view_id: str = ""
+    feishu_bot_app_id: str = ""
+    feishu_bot_app_secret: str = ""
 
     @classmethod
     def from_yaml(cls, config_path: Path) -> Self:
@@ -27,7 +36,7 @@ class FeishuConfig:
             config_path: YAML 配置文件路径
 
         Returns:
-            FeishuConfig 实例
+            RemoteConfig 实例
         """
         if not config_path.exists():
             return cls()
@@ -36,61 +45,114 @@ class FeishuConfig:
             with open(config_path, "r", encoding="utf-8") as f:
                 config = yaml.safe_load(f)
 
-            if not config or "feishu" not in config:
+            if not config or "remote" not in config:
                 return cls()
 
-            feishu = config["feishu"]
+            remote = config["remote"]
             return cls(
-                api_endpoint=feishu.get("api_endpoint", ""),
-                table_app_token=feishu.get("table_app_token", ""),
-                table_id=feishu.get("table_id", ""),
-                table_view_id=feishu.get("table_view_id", ""),
-                bot_app_id=feishu.get("bot_app_id", ""),
-                bot_app_secret=feishu.get("bot_app_secret", ""),
-                theme=config.get("theme", "dracula"),
+                feishu_api_endpoint=remote.get("feishu_api_endpoint", ""),
+                feishu_table_app_token=remote.get("feishu_table_app_token", ""),
+                feishu_table_id=remote.get("feishu_table_id", ""),
+                feishu_table_view_id=remote.get("feishu_table_view_id", ""),
+                feishu_bot_app_id=remote.get("feishu_bot_app_id", ""),
+                feishu_bot_app_secret=remote.get("feishu_bot_app_secret", ""),
             )
         except (yaml.YAMLError, IOError):
             return cls()
-
-    @classmethod
-    def from_default_path(cls) -> Self:
-        """从默认路径 ~/.config/tuido/config.yaml 加载配置.
-
-        Returns:
-            FeishuConfig 实例
-        """
-        config_path = Path.home() / ".config" / "tuido" / "config.yaml"
-        return cls.from_yaml(config_path)
 
     def is_valid(self) -> bool:
         """检查配置是否有效（所有必需字段都已配置）."""
         return all(
             [
-                self.api_endpoint,
-                self.table_app_token,
-                self.table_id,
-                self.table_view_id,
-                self.bot_app_id,
-                self.bot_app_secret,
+                self.feishu_api_endpoint,
+                self.feishu_table_app_token,
+                self.feishu_table_id,
+                self.feishu_table_view_id,
+                self.feishu_bot_app_id,
+                self.feishu_bot_app_secret,
             ]
         )
 
     def get_missing_fields(self) -> list[str]:
         """获取缺失的配置字段列表."""
         missing = []
-        if not self.api_endpoint:
-            missing.append("api_endpoint")
-        if not self.table_app_token:
-            missing.append("table_app_token")
-        if not self.table_id:
-            missing.append("table_id")
-        if not self.table_view_id:
-            missing.append("table_view_id")
-        if not self.bot_app_id:
-            missing.append("bot_app_id")
-        if not self.bot_app_secret:
-            missing.append("bot_app_secret")
+        if not self.feishu_api_endpoint:
+            missing.append("feishu_api_endpoint")
+        if not self.feishu_table_app_token:
+            missing.append("feishu_table_app_token")
+        if not self.feishu_table_id:
+            missing.append("feishu_table_id")
+        if not self.feishu_table_view_id:
+            missing.append("feishu_table_view_id")
+        if not self.feishu_bot_app_id:
+            missing.append("feishu_bot_app_id")
+        if not self.feishu_bot_app_secret:
+            missing.append("feishu_bot_app_secret")
         return missing
+
+
+class GlobalConfig(BaseModel):
+    """全局配置模型，自动从 YAML 配置加载.
+
+    配置文件格式:
+        theme: atom-one-dark
+        remote:
+          api_endpoint: https://fsopen.bytedance.net/open-apis
+          table_app_token: xxx
+          table_id: yyy
+          view_id: zzz
+          bot_app_id: aaa
+          bot_app_secret: bbb
+    """
+
+    theme: str = ""
+    remote: RemoteConfig = Field(default_factory=RemoteConfig)
+
+    @classmethod
+    def from_yaml(cls, config_path: Path) -> Self:
+        """从 YAML 文件加载配置.
+
+        Args:
+            config_path: YAML 配置文件路径
+
+        Returns:
+            GlobalConfig 实例
+        """
+        if not config_path.exists():
+            return cls()
+
+        try:
+            with open(config_path, "r", encoding="utf-8") as f:
+                config = yaml.safe_load(f)
+
+            if not config:
+                return cls()
+
+            return cls(
+                theme=config.get("theme", ""),
+                remote=RemoteConfig.from_yaml(config_path),
+            )
+        except (yaml.YAMLError, IOError):
+            return cls()
+
+    def save(self, config_path: Path) -> None:
+        """保存配置到 YAML 文件.
+
+        Args:
+            config_path: YAML 配置文件路径
+        """
+        config_path.parent.mkdir(parents=True, exist_ok=True)
+
+        config: dict[str, Any] = {
+            "theme": self.theme,
+        }
+
+        # 只保存非空的 remote 配置
+        if self.remote and self.remote.is_valid():
+            config["remote"] = self.remote.model_dump()
+
+        with open(config_path, "w", encoding="utf-8") as f:
+            yaml.dump(config, f, allow_unicode=True, sort_keys=False)
 
 
 @dataclass

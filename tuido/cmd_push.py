@@ -1,6 +1,5 @@
 """Push command implementation for tuido."""
 
-from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -151,33 +150,34 @@ def push_to_feishu(board: Board, project_name: str) -> bool:
     settings = board.settings
     remote_config = settings.get("remote", {})
 
-    api_endpoint = remote_config.get("feishu_api_endpoint")
-    feishu_table_app_token = remote_config.get("feishu_table_app_token")
-    feishu_table_id = remote_config.get("feishu_table_id")
-    feishu_table_view_id = remote_config.get("feishu_table_view_id")
+    # 支持旧格式（feishu_前缀）和新格式（无前缀）
+    api_endpoint = remote_config.get("api_endpoint") or remote_config.get("feishu_api_endpoint")
+    table_app_token = remote_config.get("table_app_token") or remote_config.get("feishu_table_app_token")
+    table_id = remote_config.get("table_id") or remote_config.get("feishu_table_id")
+    view_id = remote_config.get("view_id") or remote_config.get("feishu_table_view_id")
 
-    if not api_endpoint or not feishu_table_app_token or not feishu_table_id or not feishu_table_view_id:
+    if not api_endpoint or not table_app_token or not table_id or not view_id:
         print("Error: Feishu table configuration not found in TODO.md front matter.")
         print("Please add the following to your TODO.md:")
         print(
             """---
 remote:
-  feishu_api_endpoint: your_api_endpoint
-  feishu_table_app_token: your_app_token
-  feishu_table_id: your_table_id
-  feishu_table_view_id: your_table_view_id
+  api_endpoint: your_api_endpoint
+  table_app_token: your_app_token
+  table_id: your_table_id
+  view_id: your_table_view_id
 ---"""
         )
         return False
 
-    config = load_global_config()
-    if not config.bot_app_id or not config.bot_app_secret:
-        print("Error: bot_app_id and bot_app_secret not found in global config.")
+    global_config = load_global_config()
+    if not global_config.remote.feishu_bot_app_id or not global_config.remote.feishu_bot_app_secret:
+        print("Error: remote.feishu_bot_app_id and remote.feishu_bot_app_secret not found in global config.")
         print("Please add the following to ~/.config/tuido/config.yaml:")
         print(
-            """feishu:
-  bot_app_id: your_bot_app_id
-  bot_app_secret: your_bot_app_secret"""
+            """remote:
+  feishu_bot_app_id: your_feishu_bot_app_id
+  feishu_bot_app_secret: your_feishu_bot_app_secret"""
         )
         return False
 
@@ -220,11 +220,11 @@ remote:
         print(f"Fetching existing records from Feishu for project '{project_name}'...")
         remote_records = fetch_project_tasks(
             api_endpoint,
-            config.bot_app_id,
-            config.bot_app_secret,
-            feishu_table_app_token,
-            feishu_table_id,
-            feishu_table_view_id,
+            global_config.remote.feishu_bot_app_id,
+            global_config.remote.feishu_bot_app_secret,
+            table_app_token,
+            table_id,
+            view_id,
             project_name,
         )
         print(f"Found {len(remote_records)} existing records.")
@@ -260,7 +260,7 @@ remote:
 
     # Initialize Feishu bot
     try:
-        bot = FeishuTable(api_endpoint, config.bot_app_id, config.bot_app_secret, feishu_table_app_token, feishu_table_id)
+        bot = FeishuTable(api_endpoint, global_config.remote.feishu_bot_app_id, global_config.remote.feishu_bot_app_secret, table_app_token, table_id)
     except Exception as e:
         print(f"Error initializing Feishu bot: {e}")
         return False
@@ -311,7 +311,7 @@ remote:
             "Timestamp": util.parse_timestamp_to_ms(task.timestamp),
         }
         try:
-            if bot.update(feishu_table_app_token, feishu_table_id, record_id, fields):
+            if bot.update(table_app_token, table_id, record_id, fields):
                 print(f"✓ 更新任务: {task.task}")
                 success_count += 1
             else:

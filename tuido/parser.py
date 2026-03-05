@@ -1,6 +1,6 @@
 import re
 from pathlib import Path
-from .models import Task, Board
+from tuido.models import Task, Board
 
 
 def parse_task_content(content: str) -> dict:
@@ -13,6 +13,21 @@ def parse_task_content(content: str) -> dict:
         "updated_at": None,
     }
 
+    # Extract timestamp first (e.g., ~2026-02-28T14:30) - it's always at the end
+    timestamp_pattern = r"~(\d{4}-\d{2}-\d{2}T\d{2}:\d{2})"
+    timestamp_match = re.search(timestamp_pattern, content)
+    if timestamp_match:
+        result["updated_at"] = timestamp_match.group(1)
+        content = re.sub(timestamp_pattern, "", content).strip()
+
+    # Extract project from trailing [project] format (global view)
+    # Match pattern like "task title [ProjectName]" at the end (after timestamp is removed)
+    project_pattern = r"\[([^\]]+)\]$"
+    project_match = re.search(project_pattern, content)
+    if project_match:
+        result["project"] = project_match.group(1).strip()
+        content = re.sub(project_pattern, "", content).strip()
+
     # Extract tags (e.g., #bug, #feature)
     tag_pattern = r"#(\w+)"
     tags = re.findall(tag_pattern, content)
@@ -24,16 +39,7 @@ def parse_task_content(content: str) -> dict:
     priority_match = re.search(priority_pattern, content)
     if priority_match:
         result["priority"] = priority_match.group(1).upper()
-        result["title"] = re.sub(
-            priority_pattern, "", result["title"]
-        ).strip()
-
-    # Extract timestamp (e.g., ~2026-02-28T14:30)
-    timestamp_pattern = r"~(\d{4}-\d{2}-\d{2}T\d{2}:\d{2})"
-    timestamp_match = re.search(timestamp_pattern, content)
-    if timestamp_match:
-        result["updated_at"] = timestamp_match.group(1)
-        result["title"] = re.sub(timestamp_pattern, "", result["title"]).strip()
+        result["title"] = re.sub(priority_pattern, "", result["title"]).strip()
 
     return result
 

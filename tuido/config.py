@@ -1,17 +1,15 @@
 from pathlib import Path
-
-import yaml
-
-from tuido.models import FeishuConfig
+from tuido.models import GlobalConfig
 
 
-def load_global_config() -> FeishuConfig:
+def load_global_config() -> GlobalConfig:
     """Load global view configuration from ~/.config/tuido/config.yaml.
 
     Returns:
-        FeishuConfig instance containing global view configuration.
+        GlobalConfig instance containing global view configuration.
     """
-    return FeishuConfig.from_default_path()
+    config_path = Path.home() / ".config" / "tuido" / "config.yaml"
+    return GlobalConfig.from_yaml(config_path)
 
 
 def save_global_theme(theme: str) -> None:
@@ -24,19 +22,12 @@ def save_global_theme(theme: str) -> None:
 
     # Load existing config or create new
     if config_path.exists():
-        try:
-            with open(config_path, "r", encoding="utf-8") as f:
-                config = yaml.safe_load(f) or {}
-        except (yaml.YAMLError, IOError):
-            config = {}
+        config = GlobalConfig.from_yaml(config_path)
     else:
-        config = {}
-        # Ensure directory exists
-        config_path.parent.mkdir(parents=True, exist_ok=True)
+        config = GlobalConfig()
 
-    # Update theme at root level
-    config["theme"] = theme
+    # Update theme
+    config.theme = theme
 
     # Save back to file
-    with open(config_path, "w", encoding="utf-8") as f:
-        yaml.dump(config, f, allow_unicode=True, sort_keys=False)
+    config.save(config_path)

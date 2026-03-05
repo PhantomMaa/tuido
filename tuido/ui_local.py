@@ -9,7 +9,7 @@ from textual.binding import Binding
 from rich.text import Text
 from rich.markup import escape
 
-from .models import Task, Board
+from tuido.models import Task, Board
 
 
 THEMES = [
