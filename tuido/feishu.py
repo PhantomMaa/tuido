@@ -45,7 +45,7 @@ class FeishuTable:
             # 设置过期时间，提前5分钟刷新
             self.token_expire_time = datetime.now() + timedelta(seconds=expire_in - 300)
 
-            logger.info(f"成功获取tenant_access_token，过期时间: {self.token_expire_time}")
+            # logger.debug(f"成功获取tenant_access_token，过期时间: {self.token_expire_time}")
             return token
 
         except Exception as e:

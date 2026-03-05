@@ -229,7 +229,7 @@ remote:
 
     # Check if there's anything to do
     if not tasks_to_push and not orphaned_records:
-        print("No changes to push. All tasks are already in sync.")
+        print("没有任何变更需要推送，远程已经是最新的了。")
         return True
 
     # Ask for confirmation
