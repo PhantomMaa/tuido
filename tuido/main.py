@@ -8,7 +8,7 @@ from tuido.ui_local import TuidoApp
 from tuido.cmd_create import run_create_command
 from tuido.cmd_push import run_push_command
 from tuido.cmd_pull import run_pull_command
-from tuido.cmd_global_view import GLOBAL_VIEW_TEMP_FILE, run_global_view_command
+from tuido.cmd_global_view import run_global_view_command
 
 
 def find_todo_file(path: Path) -> Path:

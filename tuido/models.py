@@ -1,6 +1,5 @@
 """Data models for tuido."""
 
-from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Optional, Self
 
@@ -155,29 +154,29 @@ class GlobalConfig(BaseModel):
             yaml.dump(config, f, allow_unicode=True, sort_keys=False)
 
 
-@dataclass
-class FeishuTask:
+class FeishuTask(BaseModel):
     """Represents a task for Feishu table export."""
 
     title: str
-    project: str | None
-    status: str
-    tags: list[str]
-    priority: str
+    project: str | None = None
+    status: str = "Todo"
+    tags: list[str] = []
+    priority: str = ""
     timestamp: str = ""
 
 
-@dataclass
-class Task:
+class Task(BaseModel):
     """Represents a single task."""
+
+    model_config = {"arbitrary_types_allowed": True}
 
     title: str
     column: str = "Todo"  # 所属栏目名称（对应二级标题）
-    tags: list[str] = field(default_factory=list)
+    tags: list[str] = []
     priority: Optional[str] = None
     level: int = 0  # 层级深度，0为父任务，1+为子任务
     parent: Optional["Task"] = None  # 父任务引用
-    subtasks: list["Task"] = field(default_factory=list)  # 子任务列表
+    subtasks: list["Task"] = []  # 子任务列表
     project: Optional[str] = None  # 项目名称（用于全局视图）
     updated_at: Optional[str] = None  # 最后更新时间，格式: YYYY-MM-DDTHH:MM
 
@@ -185,17 +184,18 @@ class Task:
         return f"[{self.column}] {self.title}"
 
 
-@dataclass
-class Board:
+class Board(BaseModel):
     """Represents a Kanban board with tasks.
 
     数据存储结构：columns 是 OrderedDict，key 为栏目名，value 为该栏目下的任务列表。
     栏目顺序由 dict 的 key 顺序决定（Python 3.7+ dict 保持插入顺序）。
     """
 
+    model_config = {"arbitrary_types_allowed": True}
+
     title: str = "TODO Board"
-    columns: dict[str, list[Task]] = field(default_factory=dict)
-    settings: dict = field(default_factory=dict)
+    columns: dict[str, list[Task]] = {}
+    settings: dict = {}
 
     def get_tasks_by_column(self, column: str) -> list[Task]:
         """Get all tasks in the given column."""

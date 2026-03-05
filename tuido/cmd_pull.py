@@ -342,7 +342,7 @@ remote:
     # Apply changes
     try:
         updated_board = apply_remote_changes(board, new_tasks, modified_tasks, deleted_tasks)
-        print(f"\n✅ 成功拉取所有变更到本地。")
+        print("\n✅ 成功拉取所有变更到本地。")
         return True, updated_board
     except Exception as e:
         print(f"\n❌ 拉取失败: {e}")
