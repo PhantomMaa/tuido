@@ -38,39 +38,42 @@ tuido path/to/TODO.md
 # Create a sample TODO.md file
 tuido --create
 
+# List tasks (optionally filtered)
+tuido list
+tuido list --status "In Progress"
+tuido list --tag feature
+tuido list --priority P1
+
 # Push tasks to Feishu table
-tuido --push
+tuido push
 
 # Pull tasks from Feishu table
-tuido --pull
+tuido pull
 
 # View all projects from Feishu (global view)
-tuido --global-view
+tuido global-view
 ```
 
 ## Keyboard Shortcuts
 
-### Navigation
-- `↑`/`k` - Previous task
-- `↓`/`j` - Next task
-- `←`/`h` - Previous column
-- `→`/`l` - Next column
+### Navigation (Vim-style)
+- `↑` / `k` - Previous task
+- `↓` / `j` - Next task
+- `←` / `h` - Previous column
+- `→` / `l` - Next column
 
 ### Move Tasks (Between Columns)
+- `Shift+↑` / `Shift+K` - Move task up (reorder within column)
+- `Shift+↓` / `Shift+J` - Move task down (reorder within column)
 - `Shift+←` / `Shift+H` - Move task to left column
 - `Shift+→` / `Shift+L` - Move task to right column
-
-### Reorder Tasks (Within Column / Parent)
-- `Shift+↑` / `Shift+K` - Move task up
-- `Shift+↓` / `Shift+J` - Move task down
-  - Works for both top-level tasks and subtasks
 
 ### Actions
 - `r` - Refresh from file
 - `s` - Save to file
 - `t` - Switch theme
-- `q` - Quit
-- `?` - Help
+- `q` / `Ctrl+C` - Quit
+- `?` - Show help
 
 ## TODO.md Format
 
@@ -169,7 +172,7 @@ View tasks from all projects in a single read-only interface:
 
 ```bash
 # Show global view from Feishu table
-tuido --global-view
+tuido global-view
 ```
 
 **Configuration:**
@@ -185,7 +188,7 @@ The global view displays tasks from all projects organized by status columns (To
 Push local tasks to Feishu table:
 
 ```bash
-tuido --push
+tuido push
 ```
 
 Features:
@@ -199,7 +202,7 @@ Features:
 Pull remote tasks from Feishu to local:
 
 ```bash
-tuido --pull
+tuido pull
 ```
 
 Features:

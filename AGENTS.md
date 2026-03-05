@@ -6,7 +6,7 @@
 
 - **语言**: Python 3.12+
 - **框架**: Textual (TUI 框架)
-- **入口**: `tuido [path] [--create] [--push] [--pull] [--global-view]`
+- **入口**: `tuido [path|--create] [list|push|pull|global-view] [options]`
 - **配置**: `pyproject.toml` (hatchling 打包)
 
 ## 架构
@@ -17,7 +17,7 @@ tuido/
 ├── main.py               # CLI 入口 (argparse)
 ├── models.py             # 数据模型: Task, Board, FeishuTask, FeishuConfig
 ├── parser.py             # TODO.md 读写逻辑
-├── ui_local.py           # TUI 实现 (本地和全局视图共用)
+├── ui.py                 # TUI 实现 (本地和全局视图共用)
 ├── feishu.py             # 飞书 API 封装
 ├── config.py             # 全局配置加载 (~/.config/tuido/config.yaml)
 ├── cmd_create.py         # --create 命令实现
@@ -204,7 +204,7 @@ if current_status in columns:
 
 ```bash
 # 查看全局任务列表（从飞书读取）
-tuido --global-view
+tuido global-view
 ```
 
 **配置要求：**
@@ -234,17 +234,14 @@ feishu:
 
 ### 推送本地任务到飞书
 
-使用 `--push` 命令将任务同步到飞书多维表格：
+使用 `push` 子命令将任务同步到飞书多维表格：
 
 ```bash
 # 推送当前目录 TODO.md 的任务到飞书
-tuido --push
-
-# 指定项目名（默认使用目录名）
-tuido --push --project "MyProject"
+tuido push
 
 # 推送指定路径的 TODO.md
-tuido /path/to/project --push
+tuido /path/to/project push
 ```
 
 **要求**：
@@ -257,10 +254,10 @@ tuido /path/to/project --push
 
 ```bash
 # 拉取飞书任务到当前目录 TODO.md
-tuido --pull
+tuido pull
 
 # 拉取指定路径的 TODO.md
-tuido /path/to/project --pull
+tuido /path/to/project pull
 ```
 
 **特性：**
@@ -282,9 +279,10 @@ tuido /path/to/project --pull
 pip install -e .
 tuido --create             # 创建示例文件
 tuido .                    # 打开看板
-tuido --push               # 推送到飞书
-tuido --pull               # 从飞书拉取
-tuido --global-view        # 全局视图
+tuido list                 # 列出所有任务
+tuido push                 # 推送到飞书
+tuido pull                 # 从飞书拉取
+tuido global-view          # 全局视图
 ```
 
 ## 依赖
