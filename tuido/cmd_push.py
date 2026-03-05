@@ -5,7 +5,7 @@ from typing import Any
 
 from tuido import util
 from tuido.feishu import FeishuTable, fetch_project_tasks
-from tuido.models import Board, FeishuTask
+from tuido.models import Board, FeishuTask, Task
 from tuido.config import load_global_config
 
 
@@ -20,7 +20,7 @@ def task_matches_record(task: FeishuTask, record: dict[str, Any]) -> bool:
     Returns True if all fields match.
     """
     return (
-        task.task == record.get("Task", "")
+        task.title == record.get("Task", "")
         and task.project == record.get("Project", "")
         and task.status == record.get("Status", "")
         and normalize_tags(task.tags)
@@ -56,7 +56,7 @@ def compare_tasks_with_records(
             remote_map[task_key] = record
 
     # Build a set of local task titles for quick lookup
-    local_task_titles = {task.task for task in local_tasks}
+    local_task_titles = {task.title for task in local_tasks}
 
     new_tasks: list[FeishuTask] = []
     unchanged_tasks: list[FeishuTask] = []
@@ -64,10 +64,10 @@ def compare_tasks_with_records(
     orphaned_records: list[dict[str, Any]] = []
 
     for task in local_tasks:
-        if task.task not in remote_map:
+        if task.title not in remote_map:
             new_tasks.append(task)
         else:
-            remote_record = remote_map[task.task]
+            remote_record = remote_map[task.title]
             if task_matches_record(task, remote_record):
                 unchanged_tasks.append(task)
             else:
@@ -98,13 +98,13 @@ def print_diff_preview(
     if new_tasks:
         print(f"\n🟢 新增任务 ({len(new_tasks)} 个):")
         for task in new_tasks:
-            print(f"   + [{task.status}] {task.task}")
+            print(f"   + [{task.status}] {task.title}")
 
     # Modified tasks
     if modified_tasks:
         print(f"\n🟡 变更任务 ({len(modified_tasks)} 个):")
         for task, remote in modified_tasks:
-            print(f"   ~ [{task.status}] {task.task}")
+            print(f"   ~ [{task.status}] {task.title}")
             # Show field differences
             if task.status != remote.get("Status", ""):
                 print(f"     状态: {remote.get('Status', '')} → {task.status}")
@@ -135,7 +135,7 @@ def print_diff_preview(
     print(f"{'='*60}\n")
 
 
-def push_to_feishu(board: Board, project_name: str) -> bool:
+def push_to_feishu(board: Board, project_name: str | None) -> bool:
     """Push tasks to Feishu table.
 
     Args:
@@ -182,9 +182,9 @@ remote:
         return False
 
     # Collect all tasks
-    tasks: list[FeishuTask] = []
+    local_tasks: list[FeishuTask] = []
 
-    def collect_tasks(column_name: str, task_list: list, parent_title: str = ""):
+    def collect_tasks(column_name: str, task_list: list[Task], parent_title: str = ""):
         """Recursively collect tasks and their subtasks."""
         for task in task_list:
             # Build full title with parent prefix if exists
@@ -194,14 +194,14 @@ remote:
                 full_title = task.title
 
             feishu_task = FeishuTask(
-                task=full_title,
+                title=full_title,
                 project=project_name,
                 status=column_name,
                 tags=task.tags,
                 priority=task.priority or "",
                 timestamp=task.updated_at or "",
             )
-            tasks.append(feishu_task)
+            local_tasks.append(feishu_task)
 
             # Recursively collect subtasks
             if task.subtasks:
@@ -211,14 +211,14 @@ remote:
     for column_name, task_list in board.columns.items():
         collect_tasks(column_name, task_list)
 
-    if not tasks:
+    if not local_tasks:
         print("No tasks found to push.")
         return True
 
     # Fetch existing remote records for this project
     try:
         print(f"Fetching existing records from Feishu for project '{project_name}'...")
-        remote_records = fetch_project_tasks(
+        remote_tasks = fetch_project_tasks(
             api_endpoint,
             global_config.remote.feishu_bot_app_id,
             global_config.remote.feishu_bot_app_secret,
@@ -227,16 +227,16 @@ remote:
             view_id,
             project_name,
         )
-        print(f"Found {len(remote_records)} existing records.")
+        print(f"Found {len(remote_tasks)} existing records.")
     except Exception as e:
         print(f"Error fetching existing records: {e}")
         return False
 
     # Compare local tasks with remote records
-    new_tasks, unchanged_tasks, modified_tasks, orphaned_records = compare_tasks_with_records(tasks, remote_records)
+    new_tasks, unchanged_tasks, modified_tasks, orphaned_records = compare_tasks_with_records(local_tasks, remote_tasks)
 
     # Print diff preview
-    print_diff_preview(new_tasks, unchanged_tasks, modified_tasks, orphaned_records, len(tasks), len(remote_records))
+    print_diff_preview(new_tasks, unchanged_tasks, modified_tasks, orphaned_records, len(local_tasks), len(remote_tasks))
 
     # Calculate tasks to actually push (new + modified)
     tasks_to_push = new_tasks + [task for task, _ in modified_tasks]
@@ -273,7 +273,7 @@ remote:
         records = []
         for task in new_tasks:
             fields = {
-                "Task": task.task,
+                "Task": task.title,
                 "Project": task.project,
                 "Status": task.status,
                 "Tags": task.tags,
@@ -298,12 +298,12 @@ remote:
     for task, remote_record in modified_tasks:
         record_id = remote_record.get("record_id")
         if not record_id:
-            print(f"✗ 无法更新任务 '{task.task}': 缺少 record_id")
+            print(f"✗ 无法更新任务 '{task.title}': 缺少 record_id")
             fail_count += 1
             continue
 
         fields = {
-            "Task": task.task,
+            "Task": task.title,
             "Project": task.project,
             "Status": task.status,
             "Tags": task.tags,
@@ -312,13 +312,13 @@ remote:
         }
         try:
             if bot.update(table_app_token, table_id, record_id, fields):
-                print(f"✓ 更新任务: {task.task}")
+                print(f"✓ 更新任务: {task.title}")
                 success_count += 1
             else:
-                print(f"✗ 更新任务失败: {task.task}")
+                print(f"✗ 更新任务失败: {task.title}")
                 fail_count += 1
         except Exception as e:
-            print(f"✗ 更新任务 '{task.task}' 时出错: {e}")
+            print(f"✗ 更新任务 '{task.title}' 时出错: {e}")
             fail_count += 1
 
     # 3. Delete orphaned records (remote records that don't exist locally)
@@ -346,7 +346,7 @@ remote:
         return fail_count == 0
 
 
-def run_push_command(board: Board, todo_file: Path) -> int:
+def run_push_command(board: Board, todo_file: Path, is_global_view: bool = False) -> int:
     """Run the push command.
 
     Args:
@@ -356,12 +356,14 @@ def run_push_command(board: Board, todo_file: Path) -> int:
     Returns:
         Exit code (0 for success, 1 for failure)
     """
-    # Determine project name
-    # Use parent directory name as project name
-    if todo_file.is_dir():
-        project_name = todo_file.name
+    if is_global_view:
+        project_name = None
     else:
-        project_name = todo_file.parent.name
+        # Use parent directory name as project name
+        if todo_file.is_dir():
+            project_name = todo_file.name
+        else:
+            project_name = todo_file.parent.name
 
     success = push_to_feishu(board, project_name)
     return 0 if success else 1

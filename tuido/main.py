@@ -67,7 +67,7 @@ def main():
 
     # Handle --global-view command
     if args.global_view:
-        run_global_view_command(args.global_view, args.push)
+        run_global_view_command(args.push)
         return
 
     # Resolve the path

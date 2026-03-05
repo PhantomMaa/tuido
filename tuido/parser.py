@@ -6,7 +6,7 @@ from tuido.models import Task, Board
 def parse_task_content(content: str) -> dict:
     """Parse task content to extract metadata."""
     result = {
-        "title": content,
+        "title": None,
         "project": None,
         "tags": [],
         "priority": None,
@@ -27,6 +27,8 @@ def parse_task_content(content: str) -> dict:
     if project_match:
         result["project"] = project_match.group(1).strip()
         content = re.sub(project_pattern, "", content).strip()
+
+    result["content"] = content
 
     # Extract tags (e.g., #bug, #feature)
     tag_pattern = r"#(\w+)"

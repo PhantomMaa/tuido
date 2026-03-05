@@ -287,7 +287,7 @@ def fetch_project_tasks(
     table_app_token: str,
     table_id: str,
     table_view_id: str,
-    project_name: str,
+    project_name: str | None,
     field_names: list[str] = DEFAULT_FIELD_NAMES,
 ) -> list[dict[str, Any]]:
     """Fetch existing tasks from Feishu table for a specific project.
@@ -306,7 +306,7 @@ def fetch_project_tasks(
         List of parsed records keyed by the requested field names
     """
     records = fetch_global_tasks(api_endpoint, bot_app_id, bot_app_secret, table_app_token, table_id, table_view_id, field_names)
-    return [record for record in records if project_name == record.get("Project", "")]
+    return [record for record in records if project_name == record.get("Project", "")] if project_name else records
 
 
 def fetch_global_tasks(

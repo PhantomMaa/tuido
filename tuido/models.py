@@ -159,8 +159,8 @@ class GlobalConfig(BaseModel):
 class FeishuTask:
     """Represents a task for Feishu table export."""
 
-    task: str
-    project: str
+    title: str
+    project: str | None
     status: str
     tags: list[str]
     priority: str

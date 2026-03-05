@@ -20,7 +20,7 @@ def record_to_feishu_task(record: dict[str, Any]) -> FeishuTask:
     if isinstance(tags, str):
         tags = [t.strip() for t in tags.split(",") if t.strip()]
     return FeishuTask(
-        task=record.get("Task", ""),
+        title=record.get("Task", ""),
         project=record.get("Project", ""),
         status=record.get("Status", ""),
         tags=tags,
@@ -32,7 +32,7 @@ def record_to_feishu_task(record: dict[str, Any]) -> FeishuTask:
 def feishu_task_to_task(feishu_task: FeishuTask) -> Task:
     """Convert a FeishuTask to local Task object."""
     return Task(
-        title=feishu_task.task,
+        title=feishu_task.title,
         column=feishu_task.status,
         tags=feishu_task.tags,
         priority=feishu_task.priority if feishu_task.priority else None,
@@ -50,7 +50,7 @@ def task_matches_record(task: Task, feishu_task: FeishuTask) -> bool:
     feishu_tags = normalize_tags(feishu_task.tags)
 
     return (
-        task.title == feishu_task.task
+        task.title == feishu_task.title
         and task.column == feishu_task.status
         and task_tags == feishu_tags
         and (task.priority or "") == feishu_task.priority
@@ -85,7 +85,7 @@ def compare_remote_with_local(
     # Compare remote records with local
     for record in remote_records:
         feishu_task = record_to_feishu_task(record)
-        task_key = feishu_task.task
+        task_key = feishu_task.title
 
         if not task_key:
             continue
@@ -141,7 +141,7 @@ def print_pull_preview(
     if new_tasks:
         print(f"\n🟢 新增任务 ({len(new_tasks)} 个) - 将从远程添加:")
         for task in new_tasks:
-            print(f"   + [{task.status}] {task.task}")
+            print(f"   + [{task.status}] {task.title}")
             if task.tags:
                 print(f"     标签: {', '.join(task.tags)}")
             if task.priority:
@@ -151,7 +151,7 @@ def print_pull_preview(
     if modified_tasks:
         print(f"\n🟡 变更任务 ({len(modified_tasks)} 个) - 将更新本地:")
         for local_task, remote_task in modified_tasks:
-            print(f"   ~ [{remote_task.status}] {remote_task.task}")
+            print(f"   ~ [{remote_task.status}] {remote_task.title}")
             # Show field differences
             if local_task.column != remote_task.status:
                 print(f"     状态: {local_task.column} → {remote_task.status}")
@@ -215,7 +215,7 @@ def apply_remote_changes(
                 remote_task = modified_map[task.title]
                 # Create updated task from remote
                 updated_task = Task(
-                    title=remote_task.task,
+                    title=remote_task.title,
                     column=remote_task.status,
                     tags=remote_task.tags,
                     priority=remote_task.priority if remote_task.priority else None,

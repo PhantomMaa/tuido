@@ -20,9 +20,9 @@ def _init_feishu_table():
 def test_batch_create():
     feishu_table = _init_feishu_table()
 
-    tasks = [FeishuTask(task="任务1", project="项目1", status="进行中", tags=["标签1"], priority="P1")]
+    tasks = [FeishuTask(title="任务1", project="项目1", status="进行中", tags=["标签1"], priority="P1")]
     records = [
-        {"fields": {"Task": t.task, "Project": t.project, "Status": t.status, "Tags": t.tags, "Priority": t.priority, "Timestamp": 1674206443000}}
+        {"fields": {"Task": t.title, "Project": t.project, "Status": t.status, "Tags": t.tags, "Priority": t.priority, "Timestamp": 1674206443000}}
         for t in tasks
     ]
     result = feishu_table.batch_create(records)

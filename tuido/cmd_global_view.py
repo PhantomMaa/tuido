@@ -14,7 +14,7 @@ from tuido.ui_local import TuidoApp
 GLOBAL_VIEW_TEMP_FILE = Path("/tmp/TODO_global.md")
 
 
-def run_global_view_command(global_view: bool = False, push: bool = False) -> None:
+def run_global_view_command(push: bool = False) -> None:
     """Run the global view command.
 
     Fetches tasks from Feishu and saves them to a temporary file.
@@ -25,7 +25,7 @@ def run_global_view_command(global_view: bool = False, push: bool = False) -> No
     if push:
         board = parse_todo_file(GLOBAL_VIEW_TEMP_FILE)
         ## For global view, --push will update all projects in the Feishu table
-        run_push_command(board, GLOBAL_VIEW_TEMP_FILE)
+        run_push_command(board, GLOBAL_VIEW_TEMP_FILE, is_global_view=True)
         return
 
     config = load_global_config()
