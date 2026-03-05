@@ -7,7 +7,7 @@ from tuido.feishu import fetch_global_tasks
 from tuido.config import load_global_config
 from tuido.models import Board
 from tuido.parser import parse_todo_file, save_todo_file
-from tuido.ui_local import TuidoApp
+from tuido.ui import TuidoApp
 
 
 # Global temp file path for global view

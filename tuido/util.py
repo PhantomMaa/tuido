@@ -1,5 +1,20 @@
 from datetime import datetime
+from pathlib import Path
 from typing import Any
+
+
+def find_todo_file(path: Path) -> Path:
+    """Find TODO.md file in the given path."""
+    if path.is_dir():
+        # Look for TODO.md or TODO.md in the directory
+        for filename in ["TODO.md", "TODO.MD", "todo.md", "Todo.md"]:
+            todo_file = path / filename
+            if todo_file.exists():
+                return todo_file
+        # Default to TODO.md if not found
+        return path / "TODO.md"
+    else:
+        return path
 
 
 def parse_timestamp_to_ms(timestamp_str: str) -> int | None:

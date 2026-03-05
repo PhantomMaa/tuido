@@ -4,25 +4,13 @@ import argparse
 from pathlib import Path
 
 from tuido.parser import parse_todo_file
-from tuido.ui_local import TuidoApp
+from tuido.ui import TuidoApp
 from tuido.cmd_create import run_create_command
 from tuido.cmd_push import run_push_command
 from tuido.cmd_pull import run_pull_command
 from tuido.cmd_global_view import run_global_view_command
-
-
-def find_todo_file(path: Path) -> Path:
-    """Find TODO.md file in the given path."""
-    if path.is_dir():
-        # Look for TODO.md or TODO.md in the directory
-        for filename in ["TODO.md", "TODO.MD", "todo.md", "Todo.md"]:
-            todo_file = path / filename
-            if todo_file.exists():
-                return todo_file
-        # Default to TODO.md if not found
-        return path / "TODO.md"
-    else:
-        return path
+from tuido.cmd_list import run_list_command
+from tuido import util
 
 
 def main():
@@ -30,12 +18,6 @@ def main():
     parser = argparse.ArgumentParser(
         prog="tuido",
         description="A TUI Kanban board for TODO.md files",
-    )
-    parser.add_argument(
-        "path",
-        nargs="?",
-        default=".",
-        help="Path to TODO.md file or directory containing it (default: .)",
     )
     parser.add_argument(
         "--version",
@@ -63,6 +45,16 @@ def main():
         dest="global_view",
         help="Show global view of all projects from Feishu table (requires GLOBAL_VIEW_* env vars)",
     )
+    parser.add_argument(
+        "--list",
+        action="store_true",
+        help="List tasks (use --status to filter by status)",
+    )
+    parser.add_argument(
+        "--status",
+        type=str,
+        help="Filter tasks by status (column name, e.g., 'In Progress')",
+    )
     args = parser.parse_args()
 
     # Handle --global-view command
@@ -71,8 +63,8 @@ def main():
         return
 
     # Resolve the path
-    target_path = Path(args.path).resolve()
-    todo_file = find_todo_file(target_path)
+    target_path = Path(".").resolve()
+    todo_file = util.find_todo_file(target_path)
 
     # Create sample file if requested
     if args.create:
@@ -95,6 +87,10 @@ def main():
     # Handle --pull command
     if args.pull:
         return run_pull_command(board, todo_file)
+
+    # Handle --list command
+    if args.list:
+        return run_list_command(board, args.status)
 
     # Launch the TUI app (default behavior)
     app = TuidoApp(board, todo_file)
