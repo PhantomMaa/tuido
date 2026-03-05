@@ -3,9 +3,10 @@
 from datetime import datetime
 
 from textual.app import App, ComposeResult
-from textual.widgets import Footer, Static
+from textual.widgets import Footer, Static, Input, Label
 from textual.containers import Horizontal, Vertical
 from textual.binding import Binding
+from textual.screen import ModalScreen
 from rich.text import Text
 from rich.markup import escape
 
@@ -474,6 +475,62 @@ class TitleBar(Static):
         super().__init__(title, **kwargs)
 
 
+class AddTaskScreen(ModalScreen):
+    """Modal screen for adding a new task."""
+
+    DEFAULT_CSS = """
+    AddTaskScreen {
+        align: center middle;
+    }
+
+    AddTaskScreen > Vertical {
+        width: 60;
+        height: auto;
+        background: $surface;
+        border: thick $primary;
+        padding: 1 2;
+    }
+
+    AddTaskScreen Label {
+        width: 100%;
+        margin-bottom: 1;
+    }
+
+    AddTaskScreen Input {
+        width: 100%;
+        margin-bottom: 1;
+    }
+    """
+
+    def __init__(self, column: str, **kwargs):
+        self.column = column
+        self.task_title = ""
+        super().__init__(**kwargs)
+
+    def compose(self) -> ComposeResult:
+        with Vertical():
+            yield Label(f"Add Task to [{self.column}]")
+            yield Input(placeholder="Enter task title...", id="task_input")
+            yield Label("Press Enter to create, Esc to cancel", markup=False)
+
+    def on_mount(self) -> None:
+        """Focus the input when mounted."""
+        self.query_one("#task_input", Input).focus()
+
+    def on_input_submitted(self, event: Input.Submitted) -> None:
+        """Handle task creation when Enter is pressed."""
+        self.task_title = event.value.strip()
+        if self.task_title:
+            self.dismiss(self.task_title)
+        else:
+            self.dismiss(None)
+
+    def on_key(self, event) -> None:
+        """Handle escape key to cancel."""
+        if event.key == "escape":
+            self.dismiss(None)
+
+
 class TuidoApp(App):
     """Main TUI application."""
 
@@ -487,6 +544,7 @@ class TuidoApp(App):
         Binding("q", "quit", "Quit"),
         Binding("r", "refresh", "Refresh"),
         Binding("s", "save", "Save"),
+        Binding("a", "add_task", "Add"),
         Binding("up", "navigate('up')", "Prev", show=False),
         Binding("down", "navigate('down')", "Next", show=False),
         Binding("left", "navigate('left')", "Left Col", show=False),
@@ -512,7 +570,7 @@ class TuidoApp(App):
         self.board = board
         self.file_path = file_path
         self.is_global_view = is_global_view
-        self._kanban_board = None
+        self._kanban_board: KanbanBoard = KanbanBoard(self.board)
         super().__init__(**kwargs)
 
     def on_mount(self) -> None:
@@ -521,7 +579,6 @@ class TuidoApp(App):
         self.theme = theme
 
     def compose(self) -> ComposeResult:
-        self._kanban_board = KanbanBoard(self.board)
         yield self._kanban_board
         yield Footer()
 
@@ -543,6 +600,36 @@ class TuidoApp(App):
                 self.notify(f"Deleted: {task.title}")
             else:
                 self.notify("No task selected", severity="warning")
+
+    def action_add_task(self) -> None:
+        """Add a new task to the current column."""
+        # Get the current column based on selection
+        _, current_column = self._kanban_board.get_selected_task()
+
+        # If no task is selected, default to the first column
+        if not current_column:
+            columns = self.board.get_all_columns()
+            current_column = columns[0] if columns else "Todo"
+
+        def on_task_added(task_title: str | None) -> None:
+            """Handle the result from the add task screen."""
+            if task_title:
+                task = self.board.add_task(task_title, current_column)
+                if task:
+                    self._kanban_board.refresh_board()
+                    # Select the newly added task
+                    all_cards = self._kanban_board.get_all_task_cards()
+                    for i, card in enumerate(all_cards):
+                        if card.task_obj == task:
+                            self._kanban_board.selected_task_index = i
+                            break
+
+                    self._kanban_board.update_selection()
+                    self.notify(f"Added: {task_title}")
+                else:
+                    self.notify(f"Failed to add task to column: {current_column}", severity="error")
+
+        self.push_screen(AddTaskScreen(current_column), on_task_added)
 
     def action_refresh(self) -> None:
         """Refresh the board."""
@@ -584,11 +671,12 @@ class TuidoApp(App):
 - Shift+↓ / Shift+J - Move task down
 
 ## Actions
+- a - Add task to current column
+- d - Delete task
 - r - Refresh from file
 - s - Save to file
 - t - Change theme
 - q - Quit
-- d - Delete task
 - ? - Show this help
 """
         self.notify(help_text, title="Help", timeout=10)
@@ -609,6 +697,7 @@ class TuidoApp(App):
         if self.is_global_view:
             # Global view: save theme to global config
             from .config import save_global_theme
+
             try:
                 save_global_theme(next_theme)
                 self.notify(f"Theme changed to: {next_theme}")

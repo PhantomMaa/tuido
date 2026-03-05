@@ -263,6 +263,21 @@ class Board(BaseModel):
             return True
         return False
 
+    def add_task(self, title: str, column: str) -> Task | None:
+        """Add a new task to the specified column. Returns the created task or None if column doesn't exist."""
+        if column not in self.columns:
+            return None
+
+        from datetime import datetime
+
+        task = Task(
+            title=title,
+            column=column,
+            updated_at=datetime.now().strftime("%Y-%m-%dT%H:%M"),
+        )
+        self.columns[column].append(task)
+        return task
+
     @classmethod
     def from_feishu_records(cls, records: list[dict[str, str]]) -> "Board":
         """Create a Board from Feishu table records.
