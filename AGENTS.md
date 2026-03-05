@@ -18,6 +18,8 @@ tuido/
 ├── models.py             # 数据模型: Task, Board, FeishuTask, FeishuConfig
 ├── parser.py             # TODO.md 读写逻辑
 ├── ui.py                 # TUI 实现 (本地和全局视图共用)
+├── cmd_list.py           # list 命令实现
+├── util.py               # 工具函数
 ├── feishu.py             # 飞书 API 封装
 ├── config.py             # 全局配置加载 (~/.config/tuido/config.yaml)
 ├── cmd_create.py         # --create 命令实现
@@ -107,7 +109,7 @@ remote:
 - `FeishuTask`: 用于飞书同步的扁平化任务模型
 - `FeishuConfig`: 飞书配置模型，从 YAML 加载
 
-### ui_local.py
+### ui.py
 - `TaskCard`: 单个任务组件 (**重要: 使用 `task_obj`, 不要用 `task`**)
 - `KanbanColumn`: 列容器，包含标题和任务列表
 - `KanbanBoard`: 本地看板主组件，处理导航、按键绑定、看板渲染
