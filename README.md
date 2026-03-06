@@ -37,7 +37,7 @@ tuido --create
 
 # List tasks (optionally filtered)
 tuido list
-tuido list --status "In Progress"
+tuido list --status "Active"
 tuido list --tag feature
 tuido list --priority P1
 
@@ -85,7 +85,7 @@ theme: dracula
 - Task to do #feature !P1 ~2026-02-28T10:30
 - Another task #bug ~2026-02-28T09:00
 
-## In Progress
+## Active
 - Currently working on ~2026-02-28T14:00
   - Subtask 1 #backend
   - Subtask 2 #frontend
@@ -99,7 +99,7 @@ theme: dracula
 Columns are automatically created from `## ` headings in your TODO.md file. You can define any columns you need:
 
 - `## Todo` - Tasks to do
-- `## In Progress` - Tasks being worked on
+- `## Active` - Tasks being worked on
 - `## Done` - Completed tasks
 
 The column order follows the order they appear in the file.
@@ -111,7 +111,7 @@ The column order follows the order they appear in the file.
 - `!P0` / `!P1` / `!P2` / `!P3` / `!P4` - Priority (P0 = highest, P4 = lowest)
 - `~YYYY-MM-DDTHH:MM` - Last updated timestamp (e.g., ~2026-02-28T14:30)
 
-Task status is determined by which section (`## Todo`, `## In Progress`, etc.) it belongs to.
+Task status is determined by which section (`## Todo`, `## Active`, etc.) it belongs to.
 
 ### Inline Styling
 
@@ -191,7 +191,7 @@ tuido global-view
 
 Create `~/.config/tuido/config.yaml` with your Feishu credentials (see above).
 
-The global view displays tasks from all projects organized by status columns (Todo, In Progress, Review, Blocked, Done).
+The global view displays tasks from all projects organized by status columns (Todo, Active, Review, Blocked, Done).
 
 ## Feishu Sync
 

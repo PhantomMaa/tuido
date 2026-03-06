@@ -13,7 +13,7 @@ def run_list_command(
 
     Args:
         board: The parsed board containing tasks.
-        status: Optional status/column to filter by (e.g., "In Progress").
+        status: Optional status/column to filter by (e.g., "Active").
         tag: Optional tag to filter by (e.g., "feature").
         priority: Optional priority to filter by (e.g., "P0", "P1").
     """

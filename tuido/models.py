@@ -227,7 +227,7 @@ class Board(BaseModel):
 
     def get_all_columns(self) -> list[str]:
         """Get all columns in order."""
-        return list(self.columns.keys()) or ["Todo", "In Progress", "Done"]
+        return list(self.columns.keys()) or ["Todo", "Active", "Done"]
 
     def move_task_to_column(self, task: Task, new_column: str, insert_at: str = "end") -> bool:
         """Move a task to a different column. Returns True if moved.
@@ -328,9 +328,9 @@ class Board(BaseModel):
             columns_data[status].append(task)
 
         # Define column order - common status values
-        # We'll keep the order: Todo -> In Progress -> Review -> Done
+        # We'll keep the order: Todo -> Active -> Review -> Done
         # Any other statuses will be appended after these
-        predefined_order = ["Todo", "In Progress", "Review", "Done"]
+        predefined_order = ["Todo", "Active", "Review", "Done"]
 
         # Build ordered columns dict
         ordered_columns: dict[str, list[Task]] = {}

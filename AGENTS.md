@@ -58,7 +58,7 @@ remote:
 ## Todo
 - 任务描述 #标签 !优先级
 
-## In Progress
+## Active
 - 进行中的任务 #功能 !P1
 
 ## Review
@@ -221,7 +221,7 @@ feishu:
 **特性：**
 - 只读视图，不支持编辑和移动任务
 - 任务标题显示格式：`[项目名] 任务名`
-- 按状态自动分栏（Todo, In Progress, Review, Blocked, Done）
+- 按状态自动分栏（Todo, Active, Review, Blocked, Done）
 - 主题切换会自动保存到全局配置
 
 ## 飞书同步

@@ -99,7 +99,7 @@ def open_command(path):
 @click.option(
     "--status",
     type=str,
-    help="Filter tasks by status (column name, e.g., 'In Progress')",
+    help="Filter tasks by status (column name, e.g., 'Active')",
 )
 @click.option(
     "--tag",

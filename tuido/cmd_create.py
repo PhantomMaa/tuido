@@ -16,7 +16,7 @@ theme: textual-dark
   - frontend tests #testing
 - Update documentation #docs
 
-## In Progress
+## Active
 - Design database schema #backend
 
 ## Done

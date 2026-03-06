@@ -140,7 +140,7 @@ def parse_todo_file(file_path: Path) -> Board:
 
     if not file_path.exists():
         # 默认栏目
-        board.columns = {"Todo": [], "In Progress": [], "Done": []}
+        board.columns = {"Todo": [], "Active": [], "Done": []}
         return board
 
     with open(file_path, "r", encoding="utf-8") as f:
@@ -191,7 +191,7 @@ def parse_todo_file(file_path: Path) -> Board:
 
     # 如果没有解析到任何栏目，使用默认值
     if not board.columns:
-        board.columns = {"Todo": [], "In Progress": [], "Done": []}
+        board.columns = {"Todo": [], "Active": [], "Done": []}
     
     return board
 
