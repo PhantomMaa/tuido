@@ -8,6 +8,7 @@ from tuido.cmd_add import run_add_command
 from tuido.cmd_create import run_create_command
 from tuido.cmd_global_view import run_global_view_command
 from tuido.cmd_list import run_list_command
+from tuido.cmd_pick import run_pick_command
 from tuido.cmd_pull import run_pull_command
 from tuido.cmd_push import run_push_command
 from tuido.parser import parse_todo_file
@@ -66,6 +67,7 @@ def cli(ctx, target_path):
         tuido create                     # Create a sample TODO.md
         tuido add "Fix bug #bug !P0"     # Add a new task
         tuido list                       # List all tasks
+        tuido pick                       # Pick top task and move to next column
         tuido push                       # Push tasks to Feishu
         tuido pull                       # Pull tasks from Feishu
         tuido global-view                # Show global view from Feishu
@@ -126,6 +128,15 @@ def list_command(path, status, tag, priority):
     run_list_command(board, status=status, tag=tag, priority=priority)
 
 
+@cli.command(name="pick")
+@path_argument
+def pick_command(path):
+    """Pick the top task from a column and move to next column."""
+    todo_file = util.find_todo_file(path.resolve())
+    exit_code = run_pick_command(todo_file)
+    raise SystemExit(exit_code)
+
+
 @cli.command(name="push")
 @path_argument
 def push_command(path):
@@ -181,7 +192,7 @@ def global_view_command(push_flag):
 )
 def add_command(content, target_path):
     """Add a new task to TODO.md.
-    
+
     The content can include tags (#tag) and priority (!P0-4).
     Examples:
         tuido add "Fix login bug #bug !P0"

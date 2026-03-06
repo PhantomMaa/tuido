@@ -159,7 +159,7 @@ class FeishuTask(BaseModel):
 
     title: str
     project: str | None = None
-    status: str = "Todo"
+    status: str = "Todo"  # 对应本地 Task 的 column（栏目）
     tags: list[str] = []
     priority: str = ""
     timestamp: str = ""
