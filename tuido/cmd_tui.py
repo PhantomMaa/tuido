@@ -61,12 +61,21 @@ def fetch_remote_to_tmp_file() -> int:
         return 1
 
 
-def run_tui_command(path: Path, remote: bool):
+def run_tui_command(path: Path, remote: bool) -> int:
+    """Run the TUI command.
+    
+    Args:
+        path: Path to TODO.md or directory.
+        remote: Whether to open remote global view.
+        
+    Returns:
+        Exit code (0 for success, 1 for error).
+    """
     file_path = path
     if remote:
         exit_code = fetch_remote_to_tmp_file()
         if exit_code != 0:
-            raise SystemExit(exit_code)
+            return exit_code
 
         file_path = Path(GLOBAL_VIEW_TEMP_FILE)
 
@@ -74,8 +83,9 @@ def run_tui_command(path: Path, remote: bool):
     if not todo_file.exists():
         click.echo(f"Error: TODO.md not found at {todo_file}", err=True)
         click.echo("Use 'tuido create' to create a sample file.", err=True)
-        raise SystemExit(1)
+        return 1
 
     board = parse_todo_file(todo_file)
     app = TuidoApp(board, todo_file, global_mode=remote)
     app.run()
+    return 0

@@ -178,6 +178,43 @@ if current_status in columns:
     current_idx = columns.index(current_status)  # 安全
 ```
 
+### 4. CLI 错误处理与退出码
+命令函数统一返回 exit code，由 `main()` 集中处理退出：
+
+```python
+# main.py - 命令函数返回 exit code
+@cli.command(name="pick")
+@path_option
+def pick_command(path: Path) -> int:
+    """Pick the top task from a column and move to next column."""
+    todo_file = util.find_todo_file(path.resolve())
+    return run_pick_command(todo_file)  # 返回 int exit code
+
+# cmd_*.py - 子命令实现也返回 exit code
+def run_pick_command(todo_file: Path) -> int:
+    if not todo_file.exists():
+        click.echo(f"Error: TODO.md not found", err=True)
+        return 1  # 错误返回 1
+    # ... 处理逻辑 ...
+    return 0  # 成功返回 0
+
+# main() 入口集中处理
+import sys
+
+def main():
+    """Main entry point."""
+    logger.remove()
+    logger.add(lambda msg: print(msg, end=""), level="WARNING")
+    sys.exit(cli())  # 统一退出
+```
+
+**约定：**
+- **禁止在命令函数中直接使用 `raise SystemExit(exit_code)`** - 这会导致退出点分散
+- 命令函数签名添加 `-> int` 返回类型注解
+- 成功返回 `0`，错误返回非零值（通常是 `1`）
+- 错误信息使用 `click.echo(..., err=True)` 输出到 stderr
+- 所有 `run_*_command` 辅助函数统一返回 `int` exit code
+
 ## 常见任务
 
 ### 添加新快捷键

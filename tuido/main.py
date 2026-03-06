@@ -1,5 +1,6 @@
 """Command line interface for tuido using Click."""
 
+import sys
 from pathlib import Path
 
 import click
@@ -12,7 +13,6 @@ from tuido.cmd_pick import run_pick_command
 from tuido.cmd_pull import run_pull_command
 from tuido.cmd_push import run_push_command
 from tuido.parser import parse_todo_file
-from tuido.ui import TuidoApp
 from tuido import util
 
 
@@ -38,9 +38,9 @@ def cli():
     is_flag=True,
     help="Open remote global view from Feishu table instead of local TODO.md",
 )
-def tui_command(path: Path, remote: bool):
+def tui_command(path: Path, remote: bool) -> int:
     """Open TUI Kanban board."""
-    run_tui_command(path, remote)
+    return run_tui_command(path, remote)
 
 
 @cli.command(name="list")
@@ -65,63 +65,57 @@ def tui_command(path: Path, remote: bool):
     is_flag=True,
     help="List tasks from remote Feishu table instead of local TODO.md",
 )
-def list_command(path: Path, status: str, tag: str, priority: str, remote: bool):
+def list_command(path: Path, status: str, tag: str, priority: str, remote: bool) -> int:
     """List tasks from TODO.md."""
     if remote:
         # List tasks from remote
-        exit_code = run_list_command_remote(status=status, tag=tag, priority=priority)
-        raise SystemExit(exit_code)
+        return run_list_command_remote(status=status, tag=tag, priority=priority)
 
     todo_file = util.find_todo_file(path.resolve())
-
     if not todo_file.exists():
         click.echo(f"Error: TODO.md not found at {todo_file}", err=True)
         click.echo("Use 'tuido create' to create a sample file.", err=True)
-        raise SystemExit(1)
+        return 1
 
     board = parse_todo_file(todo_file)
     run_list_command(board, status=status, tag=tag, priority=priority)
+    return 0
 
 
 @cli.command(name="pick")
 @path_option
-def pick_command(path: Path):
+def pick_command(path: Path) -> int:
     """Pick the top task from a column and move to next column."""
     todo_file = util.find_todo_file(path.resolve())
-    exit_code = run_pick_command(todo_file)
-    raise SystemExit(exit_code)
+    return run_pick_command(todo_file)
 
 
 @cli.command(name="push")
 @path_option
-def push_command(path: Path):
+def push_command(path: Path) -> int:
     """Push tasks to Feishu table (requires remote config in TODO.md)."""
     todo_file = util.find_todo_file(path.resolve())
-
     if not todo_file.exists():
         click.echo(f"Error: TODO.md not found at {todo_file}", err=True)
         click.echo("Use 'tuido create' to create a sample file.", err=True)
-        raise SystemExit(1)
+        return 1
 
     board = parse_todo_file(todo_file)
-    exit_code = run_push_command(board, todo_file)
-    raise SystemExit(exit_code)
+    return run_push_command(board, todo_file)
 
 
 @cli.command(name="pull")
 @path_option
-def pull_command(path: Path):
+def pull_command(path: Path) -> int:
     """Pull tasks from Feishu table (requires remote config in TODO.md)."""
     todo_file = util.find_todo_file(path.resolve())
-
     if not todo_file.exists():
         click.echo(f"Error: TODO.md not found at {todo_file}", err=True)
         click.echo("Use 'tuido create' to create a sample file.", err=True)
-        raise SystemExit(1)
+        return 1
 
     board = parse_todo_file(todo_file)
-    exit_code = run_pull_command(board, todo_file)
-    raise SystemExit(exit_code)
+    return run_pull_command(board, todo_file)
 
 
 @cli.command(name="add")
@@ -133,7 +127,7 @@ def pull_command(path: Path):
     type=click.Path(exists=False, path_type=Path),
     help="Path to TODO.md or directory",
 )
-def add_command(content: str, target_path: Path):
+def add_command(content: str, target_path: Path) -> int:
     """Add a new task to TODO.md.
 
     The content can include tags (#tag) and priority (!P0-4).
@@ -147,10 +141,9 @@ def add_command(content: str, target_path: Path):
     if not todo_file.exists():
         click.echo(f"TODO.md not found at {todo_file}", err=True)
         click.echo("Use 'tuido create' to create a sample file first.", err=True)
-        raise SystemExit(1)
+        return 1
 
-    exit_code = run_add_command(todo_file, content=content)
-    raise SystemExit(exit_code)
+    return run_add_command(todo_file, content=content)
 
 
 @cli.command(name="create")
@@ -166,7 +159,10 @@ def main():
     # Remove default logger handler and add one with WARNING level to suppress INFO logs
     logger.remove()
     logger.add(lambda msg: print(msg, end=""), level="WARNING")
-    cli()
+
+    # Run CLI and exit with the returned exit code
+    # Click commands return int exit codes which are propagated here
+    sys.exit(cli())
 
 
 if __name__ == "__main__":
