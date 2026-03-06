@@ -343,10 +343,350 @@ def run_push_command(board: Board, todo_file: Path) -> int:
         Exit code (0 for success, 1 for failure)
     """
     # Use parent directory name as project name
-    if todo_file.is_dir():
-        project = todo_file.name
-    else:
-        project = todo_file.parent.name
-
+    project = todo_file.parent.name if todo_file.is_file() else todo_file.name
     success = push_to_feishu(board, project)
     return 0 if success else 1
+
+
+def run_push_command_remote() -> int:
+    """Run the push command for global view (push all projects).
+
+    Reads from /tmp/TODO_global.md and pushes all tasks to Feishu.
+    Each task has a project field parsed from '「project」' in the task line.
+
+    Returns:
+        Exit code (0 for success, 1 for failure)
+    """
+    from tuido.cmd_tui import GLOBAL_VIEW_TEMP_FILE
+    from tuido.parser import parse_todo_file
+
+    global_file = Path(GLOBAL_VIEW_TEMP_FILE)
+    if not global_file.exists():
+        print(f"Error: Global view file not found at {global_file}")
+        print("Please run 'tuido tui --remote' first to fetch global tasks.")
+        return 1
+
+    try:
+        board = parse_todo_file(global_file)
+    except Exception as e:
+        print(f"Error parsing global view file: {e}")
+        return 1
+
+    success = push_to_feishu_global(board)
+    return 0 if success else 1
+
+
+def push_to_feishu_global(board: Board) -> bool:
+    """Push all tasks from global view to Feishu table.
+
+    Args:
+        board: The Board object containing tasks with project info
+
+    Returns:
+        True if successful, False otherwise
+    """
+    # Load global config for Feishu credentials
+    global_config = load_global_config()
+
+    if not global_config.remote.is_valid():
+        config_path = Path.home() / ".config" / "tuido" / "config.yaml"
+        missing = global_config.remote.get_missing_fields()
+        print(f"Error: Missing Feishu configuration in {config_path}")
+        for field in missing:
+            print(f"  - remote.{field}")
+        print("\nPlease add the following to your config:")
+        print(
+            """remote:
+  feishu_api_endpoint: https://open.feishu.cn/open-apis
+  feishu_table_app_token: your_table_app_token
+  feishu_table_id: your_table_id
+  feishu_table_view_id: your_table_view_id
+  feishu_bot_app_id: your_bot_app_id
+  feishu_bot_app_secret: your_bot_app_secret"""
+        )
+        return False
+
+    # Collect all tasks from global view
+    local_tasks: list[FeishuTask] = []
+
+    # Iterate through all columns and collect tasks
+    for column_name, task_list in board.columns.items():
+        for task in task_list:
+            feishu_task = FeishuTask(
+                title=task.title,
+                project=task.project or "",  # project is parsed from '「project」'
+                status=column_name,
+                tags=task.tags,
+                priority=task.priority or "",
+                timestamp=task.updated_at or "",
+            )
+            local_tasks.append(feishu_task)
+
+    if not local_tasks:
+        print("No tasks found to push.")
+        return True
+
+    # Fetch ALL existing remote records (no project filter)
+    try:
+        print(f"Fetching all existing records from Feishu...")
+        remote_tasks = fetch_tasks(
+            global_config.remote.feishu_api_endpoint,
+            global_config.remote.feishu_bot_app_id,
+            global_config.remote.feishu_bot_app_secret,
+            global_config.remote.feishu_table_app_token,
+            global_config.remote.feishu_table_id,
+            global_config.remote.feishu_table_view_id,
+            project=None,  # No project filter - fetch all
+        )
+        print(f"Found {len(remote_tasks)} existing records.")
+    except Exception as e:
+        print(f"Error fetching existing records: {e}")
+        return False
+
+    # Compare local tasks with remote records
+    # Use title + project as unique key for comparison
+    new_tasks, unchanged_tasks, modified_tasks, orphaned_records = compare_tasks_with_records_global(
+        local_tasks, remote_tasks
+    )
+
+    # Print diff preview
+    print_diff_preview_global(
+        new_tasks, unchanged_tasks, modified_tasks, orphaned_records,
+        len(local_tasks), len(remote_tasks)
+    )
+
+    # Calculate tasks to actually push (new + modified)
+    tasks_to_push = new_tasks + [task for task, _ in modified_tasks]
+
+    # Check if there's anything to do
+    if not tasks_to_push and not orphaned_records:
+        print("没有任何变更需要推送，远程已经是最新的了。")
+        return True
+
+    # Ask for confirmation
+    print(f"即将推送 {len(tasks_to_push)} 个任务到飞书表格:")
+    print(f"  - 新增: {len(new_tasks)} 个")
+    if modified_tasks:
+        print(f"  - 变更: {len(modified_tasks)} 个(以本地为准，更新远程任务)")
+    if orphaned_records:
+        print(f"  - 删除: {len(orphaned_records)} 个 (以本地为准，删除远程多余任务)")
+    response = input("\n确认执行? (y/N): ").strip().lower()
+    if response not in ("y", "yes"):
+        print("已取消推送。")
+        return True
+
+    # Initialize Feishu bot
+    try:
+        bot = FeishuTable(
+            global_config.remote.feishu_api_endpoint,
+            global_config.remote.feishu_bot_app_id,
+            global_config.remote.feishu_bot_app_secret,
+            global_config.remote.feishu_table_app_token,
+            global_config.remote.feishu_table_id,
+        )
+    except Exception as e:
+        print(f"Error initializing Feishu bot: {e}")
+        return False
+
+    success_count = 0
+    fail_count = 0
+
+    # 1. Create new tasks using batch_create
+    if new_tasks:
+        records = []
+        for task in new_tasks:
+            fields = {
+                "Task": task.title,
+                "Project": task.project,
+                "Status": task.status,
+                "Tags": task.tags,
+                "Priority": task.priority,
+                "Timestamp": util.parse_timestamp_to_ms(task.timestamp),
+            }
+            record = {"fields": fields}
+            records.append(record)
+
+        try:
+            if bot.batch_create(records):
+                print(f"✓ 成功创建 {len(records)} 个新任务")
+                success_count += len(records)
+            else:
+                print(f"✗ 创建 {len(records)} 个新任务失败")
+                fail_count += len(records)
+        except Exception as e:
+            print(f"✗ 创建新任务时出错: {e}")
+            fail_count += len(records)
+
+    # 2. Update modified tasks using update API with record_id
+    for task, remote_record in modified_tasks:
+        record_id = remote_record.get("record_id")
+        if not record_id:
+            print(f"✗ 无法更新任务 '{task.title}': 缺少 record_id")
+            fail_count += 1
+            continue
+
+        fields = {
+            "Task": task.title,
+            "Project": task.project,
+            "Status": task.status,
+            "Tags": task.tags,
+            "Priority": task.priority,
+            "Timestamp": util.parse_timestamp_to_ms(task.timestamp),
+        }
+        try:
+            if bot.update(
+                global_config.remote.feishu_table_app_token,
+                global_config.remote.feishu_table_id,
+                record_id,
+                fields,
+            ):
+                print(f"✓ 更新任务: [{task.project}] {task.title}")
+                success_count += 1
+            else:
+                print(f"✗ 更新任务失败: [{task.project}] {task.title}")
+                fail_count += 1
+        except Exception as e:
+            print(f"✗ 更新任务 '[{task.project}] {task.title}' 时出错: {e}")
+            fail_count += 1
+
+    # 3. Delete orphaned records (remote records that don't exist locally)
+    if orphaned_records:
+        print(f"\n删除 {len(orphaned_records)} 个远程多余任务...")
+        orphaned_record_ids = [
+            record.get("record_id", "")
+            for record in orphaned_records
+            if record.get("record_id", "")
+        ]
+        if orphaned_record_ids:
+            try:
+                if bot.batch_delete(orphaned_record_ids):
+                    print(f"✓ 成功删除 {len(orphaned_record_ids)} 个远程任务")
+                    success_count += len(orphaned_record_ids)
+                else:
+                    print(f"✗ 删除 {len(orphaned_record_ids)} 个远程任务失败")
+                    fail_count += len(orphaned_record_ids)
+            except Exception as e:
+                print(f"✗ 删除远程任务时出错: {e}")
+                fail_count += len(orphaned_record_ids)
+
+    # Summary
+    if fail_count == 0:
+        print(f"\n✅ 成功推送所有 {success_count} 个任务到飞书表格。")
+        return True
+    else:
+        print(f"\n⚠️ 推送完成: {success_count} 个成功, {fail_count} 个失败。")
+        return fail_count == 0
+
+
+def compare_tasks_with_records_global(
+    local_tasks: list[FeishuTask], remote_records: list[dict[str, Any]]
+) -> tuple[list[FeishuTask], list[FeishuTask], list[tuple[FeishuTask, dict[str, Any]]], list[dict[str, Any]]]:
+    """Compare local tasks with remote records for global view.
+
+    Uses title + project as unique key for comparison.
+
+    Args:
+        local_tasks: List of local FeishuTask objects
+        remote_records: List of remote records from Feishu
+
+    Returns:
+        Tuple of (new_tasks, unchanged_tasks, modified_tasks, orphaned_records)
+        - new_tasks: Tasks that don't exist in remote
+        - unchanged_tasks: Tasks that match exactly with remote
+        - modified_tasks: Tasks that exist but have different fields
+        - orphaned_records: Remote records that don't exist in local (will be deleted)
+    """
+    # Build a map of remote records by (title, project) for quick lookup
+    remote_map: dict[tuple[str, str], dict[str, Any]] = {}
+    for record in remote_records:
+        task_key = record.get("Task", "")
+        project_key = record.get("Project", "")
+        if task_key:
+            remote_map[(task_key, project_key)] = record
+
+    # Build a set of local task keys for quick lookup
+    local_task_keys = {(task.title, task.project or "") for task in local_tasks}
+
+    new_tasks: list[FeishuTask] = []
+    unchanged_tasks: list[FeishuTask] = []
+    modified_tasks: list[tuple[FeishuTask, dict[str, Any]]] = []
+    orphaned_records: list[dict[str, Any]] = []
+
+    for task in local_tasks:
+        task_key = (task.title, task.project or "")
+        if task_key not in remote_map:
+            new_tasks.append(task)
+        else:
+            remote_record = remote_map[task_key]
+            if task_matches_record(task, remote_record):
+                unchanged_tasks.append(task)
+            else:
+                modified_tasks.append((task, remote_record))
+
+    # Find orphaned records (exist in remote but not in local)
+    for task_key, record in remote_map.items():
+        if task_key not in local_task_keys:
+            orphaned_records.append(record)
+
+    return new_tasks, unchanged_tasks, modified_tasks, orphaned_records
+
+
+def print_diff_preview_global(
+    new_tasks: list[FeishuTask],
+    unchanged_tasks: list[FeishuTask],
+    modified_tasks: list[tuple[FeishuTask, dict[str, Any]]],
+    orphaned_records: list[dict[str, Any]],
+    total_local: int,
+    total_remote: int,
+) -> None:
+    """Print a formatted diff preview for global view."""
+    print(f"\n{'='*60}")
+    print(f"📊 全局同步预览: {total_local} 个本地任务 vs {total_remote} 个远程记录")
+    print(f"{'='*60}")
+
+    # New tasks
+    if new_tasks:
+        print(f"\n🟢 新增任务 ({len(new_tasks)} 个):")
+        for task in new_tasks:
+            project_display = f"[{task.project}] " if task.project else ""
+            print(f"   + [{task.status}] {project_display}{task.title}")
+
+    # Modified tasks
+    if modified_tasks:
+        print(f"\n🟡 变更任务 ({len(modified_tasks)} 个):")
+        for task, remote in modified_tasks:
+            project_display = f"[{task.project}] " if task.project else ""
+            print(f"   ~ [{task.status}] {project_display}{task.title}")
+            # Show field differences
+            if task.status != remote.get("Status", ""):
+                print(f"     状态: {remote.get('Status', '')} → {task.status}")
+            if normalize_tags(task.tags) != normalize_tags(
+                remote.get("Tags", [])
+                if isinstance(remote.get("Tags"), list)
+                else remote.get("Tags", "").split(", ")
+                if remote.get("Tags")
+                else []
+            ):
+                old_tags = remote.get("Tags", "")
+                new_tags = ", ".join(task.tags)
+                print(f"     标签: {old_tags} → {new_tags}")
+            if task.priority != remote.get("Priority", ""):
+                old_priority = remote.get("Priority", "") or "(无)"
+                new_priority = task.priority or "(无)"
+                print(f"     优先级: {old_priority} → {new_priority}")
+            if task.timestamp != remote.get("Timestamp", ""):
+                old_timestamp = remote.get("Timestamp", "") or "(无)"
+                new_timestamp = task.timestamp or "(无)"
+                print(f"     时间戳: {old_timestamp} → {new_timestamp}")
+
+    # Orphaned records (to be deleted)
+    if orphaned_records:
+        print(f"\n🔴 删除任务 ({len(orphaned_records)} 个) - 远程比本地多出的任务:")
+        for record in orphaned_records:
+            project_display = f"[{record.get('Project', '')}] " if record.get("Project") else ""
+            print(f"   - [{record.get('Status', '')}] {project_display}{record.get('Task', '')}")
+
+    print(f"\n{'='*60}")
+    delete_info = f", {len(orphaned_records)} 删除" if orphaned_records else ""
+    print(f"总结: {len(new_tasks)} 新增, {len(modified_tasks)} 变更{delete_info}, {len(unchanged_tasks)} 未变更")
+    print(f"{'='*60}\n")

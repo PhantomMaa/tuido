@@ -11,7 +11,7 @@ from tuido.cmd_tui import run_tui_command
 from tuido.cmd_list import run_list_command, run_list_command_remote
 from tuido.cmd_pick import run_pick_command
 from tuido.cmd_pull import run_pull_command
-from tuido.cmd_push import run_push_command
+from tuido.cmd_push import run_push_command, run_push_command_remote
 from tuido.parser import parse_todo_file
 from tuido import util
 
@@ -92,8 +92,17 @@ def pick_command(path: Path) -> int:
 
 @cli.command(name="push")
 @path_option
-def push_command(path: Path) -> int:
+@click.option(
+    "--remote",
+    is_flag=True,
+    help="Push all tasks from global view (/tmp/TODO_global.md) to Feishu",
+)
+def push_command(path: Path, remote: bool) -> int:
     """Push tasks to Feishu table (requires remote config in TODO.md)."""
+    if remote:
+        # Push from global view
+        return run_push_command_remote()
+
     todo_file = util.find_todo_file(path.resolve())
     if not todo_file.exists():
         click.echo(f"Error: TODO.md not found at {todo_file}", err=True)
