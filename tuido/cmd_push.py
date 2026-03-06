@@ -189,7 +189,7 @@ remote:
         for task in task_list:
             feishu_task = FeishuTask(
                 title=task.title,
-                project=project,
+                project=project if project is not None else task.project,
                 status=column_name,
                 tags=task.tags,
                 priority=task.priority or "",
