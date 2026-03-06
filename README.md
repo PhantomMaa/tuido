@@ -29,17 +29,25 @@ pip install -e .
 ## Usage
 
 ```bash
-# Open TODO.md in current directory
+# Open TODO.md in current directory (default)
 tuido .
+tuido
 
 # Create a sample TODO.md file
-tuido --create
+tuido create
 
 # List tasks (optionally filtered)
 tuido list
 tuido list --status "Active"
 tuido list --tag feature
 tuido list --priority P1
+
+# Add a new task
+tuido add "Fix bug #bug !P0"
+tuido add "Update documentation #docs"
+
+# Pick the top task and move to next column
+tuido pick
 
 # Push tasks to Feishu table
 tuido push
@@ -49,6 +57,9 @@ tuido pull
 
 # View all projects from Feishu (global view)
 tuido global-view
+
+# Push global view tasks to Feishu
+tuido global-view --push
 ```
 
 ## Keyboard Shortcuts
@@ -66,6 +77,9 @@ tuido global-view
 - `Shift+→` / `Shift+L` - Move task to right column
 
 ### Actions
+- `a` - Add new task
+- `d` - Delete task
+- `e` - Edit task
 - `r` - Refresh from file
 - `s` - Save to file
 - `t` - Switch theme

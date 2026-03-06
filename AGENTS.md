@@ -6,7 +6,7 @@
 
 - **语言**: Python 3.12+
 - **框架**: Textual (TUI 框架)
-- **入口**: `tuido [path|--create] [list|push|pull|global-view] [options]`
+- **入口**: `tuido [path|create|add|pick|list|push|pull|global-view] [options]`
 - **配置**: `pyproject.toml` (hatchling 打包)
 
 ## 架构
@@ -14,18 +14,20 @@
 ```
 tuido/
 ├── __init__.py           # 包版本
-├── main.py               # CLI 入口 (argparse)
+├── main.py               # CLI 入口 (Click)
 ├── models.py             # 数据模型: Task, Board, FeishuTask, FeishuConfig
 ├── parser.py             # TODO.md 读写逻辑
 ├── ui.py                 # TUI 实现 (本地和全局视图共用)
 ├── cmd_list.py           # list 命令实现
+├── cmd_add.py            # add 命令实现
+├── cmd_pick.py           # pick 命令实现
 ├── util.py               # 工具函数
 ├── feishu.py             # 飞书 API 封装
 ├── config.py             # 全局配置加载 (~/.config/tuido/config.yaml)
-├── cmd_create.py         # --create 命令实现
-├── cmd_push.py           # --push 命令实现
-├── cmd_pull.py           # --pull 命令实现
-└── cmd_global_view.py    # --global-view 命令实现
+├── cmd_create.py         # create 命令实现
+├── cmd_push.py           # push 命令实现
+├── cmd_pull.py           # pull 命令实现
+└── cmd_global_view.py    # global-view 命令实现
 ```
 
 ## 数据格式 (TODO.md)
@@ -76,6 +78,7 @@ remote:
 ### 元数据语法
 - `#标签` - 标签 (如 #功能, #缺陷)
 - `!优先级` - 优先级 (如 !P0, !P1, !P2, !P3, !P4，P0 最高)
+- `~YYYY-MM-DDTHH:MM` - 时间戳 (如 ~2026-02-28T14:30，自动更新)
 
 ### 行内样式
 任务标题支持 Markdown 风格的行内格式，在 TUI 中会渲染为对应样式：
@@ -118,6 +121,11 @@ remote:
 - `Shift+→/L` - 右移 (移到下一栏目)
 - `Shift+↑/K` - 上移 (同列内调整顺序，支持子任务)
 - `Shift+↓/J` - 下移 (同列内调整顺序，支持子任务)
+
+### 任务编辑
+- `a` - 添加新任务
+- `d` - 删除任务
+- `e` - 编辑任务
 
 ### 其他操作
 - `r` - 从文件刷新
@@ -219,10 +227,10 @@ feishu:
 全局视图模式首先从飞书获取所有任务，生成临时文件 `/tmp/TODO_global.md`，然后使用与本地模式相同的 TUI (`TuidoApp`) 进行展示。
 
 **特性：**
-- 只读视图，不支持编辑和移动任务
 - 任务标题显示格式：`[项目名] 任务名`
 - 按状态自动分栏（Todo, Active, Review, Blocked, Done）
 - 主题切换会自动保存到全局配置
+- 支持 `--push` 参数推送任务到飞书
 
 ## 飞书同步
 
@@ -268,13 +276,15 @@ tuido /path/to/project pull
 手动运行：
 ```bash
 pip install -e .
-tuido --create                  # 创建示例文件
-tuido add "Fix bug #bug !P0"    # 添加任务
 tuido .                         # 打开看板
+tuido create                    # 创建示例文件
+tuido add "Fix bug #bug !P0"    # 添加任务
+tuido pick                      # 选取首任务并移到下一栏
 tuido list                      # 列出所有任务
 tuido push                      # 推送到飞书
 tuido pull                      # 从飞书拉取
 tuido global-view               # 全局视图
+tuido global-view --push        # 推送全局视图到飞书
 ```
 
 ## 依赖
