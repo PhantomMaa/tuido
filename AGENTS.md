@@ -268,12 +268,13 @@ tuido /path/to/project pull
 手动运行：
 ```bash
 pip install -e .
-tuido --create             # 创建示例文件
-tuido .                    # 打开看板
-tuido list                 # 列出所有任务
-tuido push                 # 推送到飞书
-tuido pull                 # 从飞书拉取
-tuido global-view          # 全局视图
+tuido --create                  # 创建示例文件
+tuido add "Fix bug #bug !P0"    # 添加任务
+tuido .                         # 打开看板
+tuido list                      # 列出所有任务
+tuido push                      # 推送到飞书
+tuido pull                      # 从飞书拉取
+tuido global-view               # 全局视图
 ```
 
 ## 依赖

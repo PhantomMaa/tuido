@@ -4,6 +4,7 @@ from pathlib import Path
 
 import click
 
+from tuido.cmd_add import run_add_command
 from tuido.cmd_create import run_create_command
 from tuido.cmd_global_view import run_global_view_command
 from tuido.cmd_list import run_list_command
@@ -61,12 +62,13 @@ def cli(ctx, target_path):
     """A TUI Kanban board for TODO.md files.
     \b
     Examples:
-        tuido .              # Open TUI with current directory's TODO.md
-        tuido create         # Create a sample TODO.md
-        tuido list           # List all tasks
-        tuido push           # Push tasks to Feishu
-        tuido pull           # Pull tasks from Feishu
-        tuido global-view    # Show global view from Feishu
+        tuido .                          # Open TUI with current directory's TODO.md
+        tuido create                     # Create a sample TODO.md
+        tuido add "Fix bug #bug !P0"     # Add a new task
+        tuido list                       # List all tasks
+        tuido push                       # Push tasks to Feishu
+        tuido pull                       # Pull tasks from Feishu
+        tuido global-view                # Show global view from Feishu
     """
     # If no subcommand is invoked, open TUI
     if ctx.invoked_subcommand is None:
@@ -166,6 +168,35 @@ def pull_command(path):
 def global_view_command(push_flag):
     """Show global view of all projects from Feishu table."""
     run_global_view_command(push=push_flag)
+
+
+@cli.command(name="add")
+@click.argument("content", required=True)
+@click.option(
+    "--path",
+    "target_path",
+    default=".",
+    type=click.Path(exists=False, path_type=Path),
+    help="Path to TODO.md or directory (default: current directory)",
+)
+def add_command(content, target_path):
+    """Add a new task to TODO.md.
+    
+    The content can include tags (#tag) and priority (!P0-4).
+    Examples:
+        tuido add "Fix login bug #bug !P0"
+        tuido add "Update documentation #docs"
+    """
+    todo_file = util.find_todo_file(target_path.resolve())
+
+    # If file doesn't exist, create it first
+    if not todo_file.exists():
+        click.echo(f"TODO.md not found at {todo_file}", err=True)
+        click.echo("Use 'tuido create' to create a sample file first.", err=True)
+        raise SystemExit(1)
+
+    exit_code = run_add_command(todo_file, content=content)
+    raise SystemExit(exit_code)
 
 
 @cli.command(name="create")
