@@ -10,10 +10,9 @@ remote:
 # TUIDO
 
 ## Todo
-- `tuido` 命令打开当前项目，`tuido .` 打开指定目录 #feature ~2026-03-06T12:38
+- 修复 `--global-view --push` 时，对 project 解析的问题，导致的比对错误 #bugfix ~2026-03-06T12:16
 
 ## Active
-- 修复 `--global-view --push` 时，对 project 解析的问题，导致的比对错误 #bugfix ~2026-03-06T12:16
 
 ## Done
 - 在 global-view 模式下，不允许使用按键 `r` #bugfix ~2026-03-06T17:57
