@@ -3,7 +3,7 @@
 from pathlib import Path
 
 from tuido.cmd_push import run_push_command
-from tuido.feishu import fetch_global_tasks
+from tuido.feishu import fetch_tasks
 from tuido.config import load_global_config
 from tuido.models import Board
 from tuido.parser import parse_todo_file, save_todo_file
@@ -41,7 +41,7 @@ def run_global_view_command(push: bool = False) -> None:
     # Fetch tasks from Feishu
     try:
         print("Fetching global tasks from Feishu...")
-        records = fetch_global_tasks(
+        records = fetch_tasks(
             config.remote.feishu_api_endpoint,
             config.remote.feishu_bot_app_id,
             config.remote.feishu_bot_app_secret,

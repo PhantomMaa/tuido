@@ -148,7 +148,14 @@ class FeishuTable:
             logger.error(f"批量删除表格记录失败: {e}")
             return False
 
-    def fetch_records(self, table_view_id: str, field_names: list[str], page_size: int = 100, page_token: str | None = None) -> dict[str, Any]:
+    def fetch_records(
+        self,
+        table_view_id: str,
+        field_names: list[str],
+        page_size: int = 100,
+        page_token: str | None = None,
+        condition: tuple[str, str] | None = None,
+    ) -> dict[str, Any]:
         """
         获取表格记录
 
@@ -164,7 +171,17 @@ class FeishuTable:
         if page_token:
             params["page_token"] = page_token
 
-        payload = {"field_names": field_names, "view_id": table_view_id}
+        filter = (
+            {
+                "conditions": [
+                    {"field_name": condition[0], "operator": "is", "value": [condition[1]]},
+                ],
+                "conjunction": "and",
+            }
+            if condition
+            else None
+        )
+        payload = {"field_names": field_names, "view_id": table_view_id, "filter": filter}
 
         try:
             response = self._make_request("POST", endpoint, json=payload, params=params)
@@ -216,7 +233,13 @@ class FeishuTable:
 
         return result
 
-    def fetch_all(self, table_view_id: str, field_names: list[str], limit: int | None = None) -> list[dict[str, Any]]:
+    def fetch_all(
+        self,
+        table_view_id: str,
+        field_names: list[str],
+        limit: int | None = None,
+        condition: tuple[str, str] | None = None,
+    ) -> list[dict[str, Any]]:
         """
         抓取视图中的所有记录
 
@@ -236,7 +259,7 @@ class FeishuTable:
             logger.info(f"正在获取第 {page_count} 页数据...")
 
             try:
-                data = self.fetch_records(table_view_id, field_names, page_size=200, page_token=page_token)
+                data = self.fetch_records(table_view_id, field_names, page_size=200, page_token=page_token, condition=condition)
                 items = data.get("items", [])
                 size = len(items)
                 total_count += size
@@ -280,36 +303,7 @@ class FeishuTable:
 DEFAULT_FIELD_NAMES = ["Task", "Project", "Status", "Tags", "Priority", "Timestamp"]
 
 
-def fetch_project_tasks(
-    api_endpoint: str,
-    bot_app_id: str,
-    bot_app_secret: str,
-    table_app_token: str,
-    table_id: str,
-    table_view_id: str,
-    project_name: str | None,
-    field_names: list[str] = DEFAULT_FIELD_NAMES,
-) -> list[dict[str, Any]]:
-    """Fetch existing tasks from Feishu table for a specific project.
-
-    Args:
-        api_endpoint: Feishu API endpoint
-        bot_app_id: Feishu bot app ID
-        bot_app_secret: Feishu bot app secret
-        table_app_token: Table app token
-        table_id: Table ID
-        table_view_id: Table view ID
-        project_name: Project name to filter by
-        field_names: Fields to fetch; defaults to Task/Project/Status/Tags/Priority
-
-    Returns:
-        List of parsed records keyed by the requested field names
-    """
-    records = fetch_global_tasks(api_endpoint, bot_app_id, bot_app_secret, table_app_token, table_id, table_view_id, field_names)
-    return [record for record in records if project_name == record.get("Project", "")] if project_name else records
-
-
-def fetch_global_tasks(
+def fetch_tasks(
     api_endpoint: str,
     bot_app_id: str,
     bot_app_secret: str,
@@ -317,6 +311,7 @@ def fetch_global_tasks(
     table_id: str,
     table_view_id: str,
     field_names: list[str] = DEFAULT_FIELD_NAMES,
+    project: str | None = None,
 ) -> list[dict[str, Any]]:
     """Fetch all tasks from Feishu table for global view.
 
@@ -333,7 +328,7 @@ def fetch_global_tasks(
         List of parsed records keyed by the requested field names
     """
     bot = FeishuTable(api_endpoint, bot_app_id, bot_app_secret, table_app_token, table_id)
-    records = bot.fetch_all(table_view_id, field_names)
+    records = bot.fetch_all(table_view_id, field_names, condition=("Project", project) if project else None)
 
     def _normalize(value: Any) -> Any:
         if isinstance(value, list):

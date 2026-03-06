@@ -3,7 +3,7 @@
 from pathlib import Path
 from typing import Any
 
-from tuido.feishu import fetch_project_tasks
+from tuido.feishu import fetch_tasks
 from tuido.models import Board, FeishuTask, Task
 from tuido.config import load_global_config
 from tuido.parser import save_todo_file
@@ -238,7 +238,7 @@ def apply_remote_changes(
     return new_board
 
 
-def pull_from_feishu(board: Board, project_name: str, dry_run: bool = False) -> tuple[bool, Board]:
+def pull_from_feishu(board: Board, project: str, dry_run: bool = False) -> tuple[bool, Board]:
     """Pull tasks from Feishu table.
 
     Args:
@@ -289,15 +289,15 @@ remote:
 
     # Fetch remote records for this project
     try:
-        print(f"Fetching remote records from Feishu for project '{project_name}'...")
-        remote_records = fetch_project_tasks(
+        print(f"Fetching remote records from Feishu for project '{project}'...")
+        remote_records = fetch_tasks(
             api_endpoint,
             global_config.remote.feishu_bot_app_id,
             global_config.remote.feishu_bot_app_secret,
             table_app_token,
             table_id,
             view_id,
-            project_name,
+            project=project,
         )
         print(f"Found {len(remote_records)} remote records.")
     except Exception as e:
@@ -356,11 +356,11 @@ def run_pull_command(board: Board, todo_file: Path) -> int:
     # Determine project name
     # Use parent directory name as project name
     if todo_file.is_dir():
-        project_name = todo_file.name
+        project = todo_file.name
     else:
-        project_name = todo_file.parent.name
+        project = todo_file.parent.name
 
-    success, updated_board = pull_from_feishu(board, project_name)
+    success, updated_board = pull_from_feishu(board, project)
 
     if success:
         # Save the updated board back to file

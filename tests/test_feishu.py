@@ -12,7 +12,13 @@ def _init_feishu_table():
     global feishu_table_view_id
     feishu_table_view_id = config.remote.feishu_table_view_id
 
-    feishu_table = FeishuTable(config.remote.feishu_api_endpoint, config.remote.feishu_bot_app_id, config.remote.feishu_bot_app_secret, config.remote.feishu_table_app_token, config.remote.table_id)
+    feishu_table = FeishuTable(
+        config.remote.feishu_api_endpoint,
+        config.remote.feishu_bot_app_id,
+        config.remote.feishu_bot_app_secret,
+        config.remote.feishu_table_app_token,
+        config.remote.feishu_table_id,
+    )
     return feishu_table
 
 
@@ -32,6 +38,7 @@ def test_batch_create():
 # pytest tests/test_feishu.py::test_fetch_all -s
 def test_fetch_all():
     feishu_table = _init_feishu_table()
-    result = feishu_table.fetch_all(feishu_table_view_id, ["Task", "Project", "Status", "Tags", "Priority", "Timestamp"])
+    result = feishu_table.fetch_all(
+        feishu_table_view_id, ["Task", "Project", "Status", "Tags", "Priority", "Timestamp"], condition=("Project", "xelm")
+    )
     print(json.dumps(result, ensure_ascii=False, indent=2))
-

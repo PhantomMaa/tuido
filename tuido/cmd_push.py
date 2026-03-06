@@ -4,8 +4,8 @@ from pathlib import Path
 from typing import Any
 
 from tuido import util
-from tuido.feishu import FeishuTable, fetch_project_tasks
-from tuido.models import Board, FeishuTask, Task
+from tuido.feishu import FeishuTable, fetch_tasks
+from tuido.models import Board, FeishuTask
 from tuido.config import load_global_config
 
 
@@ -204,14 +204,14 @@ remote:
     # Fetch existing remote records for this project
     try:
         print(f"Fetching existing records from Feishu for project '{project_name}'...")
-        remote_tasks = fetch_project_tasks(
+        remote_tasks = fetch_tasks(
             api_endpoint,
             global_config.remote.feishu_bot_app_id,
             global_config.remote.feishu_bot_app_secret,
             table_app_token,
             table_id,
             view_id,
-            project_name,
+            project=project_name,
         )
         print(f"Found {len(remote_tasks)} existing records.")
     except Exception as e:
