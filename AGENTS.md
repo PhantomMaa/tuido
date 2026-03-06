@@ -6,7 +6,7 @@
 
 - **语言**: Python 3.12+
 - **框架**: Textual (TUI 框架)
-- **入口**: `tuido [open|create|add|pick|list|push|pull|global-view] [options]`
+- **入口**: `tuido [tui|create|add|pick|list|push|pull] [options]`
 - **路径参数**: `--path` 可选，默认为当前目录 `.`
 - **配置**: `pyproject.toml` (hatchling 打包)
 
@@ -25,10 +25,10 @@ tuido/
 ├── util.py               # 工具函数
 ├── feishu.py             # 飞书 API 封装
 ├── config.py             # 全局配置加载/保存 (~/.config/tuido/config.yaml)
+├── cmd_tui.py            # tui 命令实现
 ├── cmd_create.py         # create 命令实现
 ├── cmd_push.py           # push 命令实现
-├── cmd_pull.py           # pull 命令实现
-└── cmd_global_view.py    # global-view 命令实现
+└── cmd_pull.py           # pull 命令实现
 ```
 
 ## 数据格式 (TODO.md)
@@ -203,14 +203,11 @@ if current_status in columns:
 
 ## 全局视图
 
-使用 `global-view` 命令查看所有项目的任务：
+使用 `tui --remote` 命令查看所有项目的任务：
 
 ```bash
 # 查看全局任务列表（从飞书读取）
-tuido global-view
-
-# 推送全局视图到飞书
-tuido global-view --push
+tuido tui --remote
 ```
 
 **配置要求：**
@@ -235,7 +232,6 @@ remote:
 - 任务标题显示格式：`[项目名] 任务名`
 - 按状态自动分栏（Todo, Active, Review, Done 及自定义栏目）
 - 主题切换会自动保存到全局配置
-- 支持 `--push` 参数推送任务到飞书
 
 ## 飞书同步
 
@@ -281,15 +277,15 @@ tuido pull --path /path/to/project
 手动运行：
 ```bash
 pip install -e .
-tuido open                      # 打开看板（--path 默认为 .）
+tuido tui                       # 打开看板（--path 默认为 .）
+tuido tui --remote              # 打开全局视图（从飞书读取）
 tuido create                    # 创建示例文件
 tuido add "Fix bug #bug !P0"    # 添加任务
 tuido pick                      # 选取首任务并移到下一栏
 tuido list                      # 列出所有任务
+tuido list --remote             # 列出飞书上的任务
 tuido push                      # 推送到飞书
 tuido pull                      # 从飞书拉取
-tuido global-view               # 全局视图
-tuido global-view --push        # 推送全局视图到飞书
 ```
 
 ## 依赖
@@ -299,6 +295,8 @@ tuido global-view --push        # 推送全局视图到飞书
 - `pydantic` - 数据模型验证
 - `requests` - HTTP 请求
 - `pyyaml` - YAML 解析
+- `click` - CLI 框架
+- `loguru` - 日志记录
 
 开发安装：
 ```bash

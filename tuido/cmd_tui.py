@@ -2,10 +2,14 @@
 
 from pathlib import Path
 
+import click
+
+from tuido import util
 from tuido.feishu import fetch_tasks
 from tuido.config import load_global_config
-from tuido.parser import save_todo_file
+from tuido.parser import parse_todo_file, save_todo_file
 from tuido.models import Board
+from tuido.ui import TuidoApp
 
 
 # Global temp file path for global view
@@ -55,3 +59,23 @@ def fetch_remote_to_tmp_file() -> int:
     except Exception as e:
         print(f"Error fetching global tasks: {e}")
         return 1
+
+
+def run_tui_command(path: Path, remote: bool):
+    file_path = path
+    if remote:
+        exit_code = fetch_remote_to_tmp_file()
+        if exit_code != 0:
+            raise SystemExit(exit_code)
+
+        file_path = Path(GLOBAL_VIEW_TEMP_FILE)
+
+    todo_file = util.find_todo_file(file_path)
+    if not todo_file.exists():
+        click.echo(f"Error: TODO.md not found at {todo_file}", err=True)
+        click.echo("Use 'tuido create' to create a sample file.", err=True)
+        raise SystemExit(1)
+
+    board = parse_todo_file(todo_file)
+    app = TuidoApp(board, todo_file, global_mode=remote)
+    app.run()

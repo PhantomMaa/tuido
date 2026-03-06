@@ -29,9 +29,9 @@ pip install -e .
 ## Usage
 
 ```bash
-# Open TODO.md in current directory (default)
-tuido open
-tuido open --path .
+# Open TUI Kanban board for TODO.md in current directory (default)
+tuido tui
+tuido tui --path .
 
 # Create a sample TODO.md file
 tuido create
@@ -59,11 +59,11 @@ tuido push --path /path/to/project
 tuido pull
 tuido pull --path /path/to/project
 
-# View all projects from Feishu (global view)
-tuido global-view
+# Open remote global view from Feishu table
+tuido tui --remote
 
-# Push global view tasks to Feishu
-tuido global-view --push
+# List tasks from remote Feishu table
+tuido list --remote
 ```
 
 **Note:** `--path` is optional for most commands and defaults to the current directory (`.`).
@@ -189,29 +189,30 @@ remote:
 For Feishu integration, create the config file:
 
 ```yaml
-feishu:
-  api_endpoint: https://open.feishu.cn/open-apis
-  table_app_token: your_table_app_token
-  table_id: your_table_id
-  table_view_id: your_table_view_id
-  bot_app_id: your_bot_app_id
-  bot_app_secret: your_bot_app_secret
+theme: dracula
+remote:
+  feishu_api_endpoint: https://open.feishu.cn/open-apis
+  feishu_table_app_token: your_table_app_token
+  feishu_table_id: your_table_id
+  feishu_table_view_id: your_table_view_id
+  feishu_bot_app_id: your_bot_app_id
+  feishu_bot_app_secret: your_bot_app_secret
 ```
 
 ## Global View
 
-View tasks from all projects in a single read-only interface:
+View tasks from all projects in a single interface:
 
 ```bash
 # Show global view from Feishu table
-tuido global-view
+tuido tui --remote
 ```
 
 **Configuration:**
 
 Create `~/.config/tuido/config.yaml` with your Feishu credentials (see above).
 
-The global view displays tasks from all projects organized by status columns (Todo, Active, Review, Blocked, Done).
+The global view displays tasks from all projects organized by status columns (Todo, Active, Review, Done).
 
 ## Feishu Sync
 

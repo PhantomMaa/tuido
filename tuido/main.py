@@ -6,7 +6,7 @@ import click
 from loguru import logger
 from tuido.cmd_add import run_add_command
 from tuido.cmd_create import run_create_command
-from tuido.global_view import GLOBAL_VIEW_TEMP_FILE, fetch_remote_to_tmp_file
+from tuido.cmd_tui import run_tui_command
 from tuido.cmd_list import run_list_command, run_list_command_remote
 from tuido.cmd_pick import run_pick_command
 from tuido.cmd_pull import run_pull_command
@@ -40,23 +40,7 @@ def cli():
 )
 def tui_command(path: Path, remote: bool):
     """Open TUI Kanban board."""
-    file_path = path
-    if remote:
-        exit_code = fetch_remote_to_tmp_file()
-        if exit_code != 0:
-            raise SystemExit(exit_code)
-
-        file_path = Path(GLOBAL_VIEW_TEMP_FILE)
-
-    todo_file = util.find_todo_file(file_path)
-    if not todo_file.exists():
-        click.echo(f"Error: TODO.md not found at {todo_file}", err=True)
-        click.echo("Use 'tuido create' to create a sample file.", err=True)
-        raise SystemExit(1)
-
-    board = parse_todo_file(todo_file)
-    app = TuidoApp(board, todo_file, global_mode=remote)
-    app.run()
+    run_tui_command(path, remote)
 
 
 @cli.command(name="list")
