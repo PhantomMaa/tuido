@@ -3,6 +3,7 @@
 from pathlib import Path
 
 import click
+from loguru import logger
 from tuido.cmd_add import run_add_command
 from tuido.cmd_create import run_create_command
 from tuido.cmd_global_view import run_global_view_command
@@ -180,6 +181,9 @@ def create_command(path):
 
 def main():
     """Main entry point."""
+    # Remove default logger handler and add one with WARNING level to suppress INFO logs
+    logger.remove()
+    logger.add(lambda msg: print(msg, end=""), level="WARNING")
     cli()
 
 

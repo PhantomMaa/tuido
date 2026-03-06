@@ -34,7 +34,6 @@ def run_list_command_remote(
 
     # Fetch tasks from Feishu
     try:
-        print("Fetching tasks from Feishu...")
         records = fetch_tasks(
             config.remote.feishu_api_endpoint,
             config.remote.feishu_bot_app_id,
@@ -43,7 +42,6 @@ def run_list_command_remote(
             config.remote.feishu_table_id,
             config.remote.feishu_table_view_id,
         )
-        print(f"Fetched {len(records)} tasks from Feishu.\n")
 
         # Convert to Board
         board = Board.from_feishu_records(records)
