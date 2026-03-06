@@ -10,6 +10,7 @@ import re
 from rich.text import Text
 from rich.markup import escape
 from tuido.models import Task, Board
+from tuido.parser import parse_task_content
 
 
 def parse_inline_styles(text: str) -> str:
@@ -543,7 +544,7 @@ class TitleBar(Static):
 
 
 class AddTaskScreen(ModalScreen):
-    """Modal screen for adding a new task."""
+    """Modal screen for adding or editing a task."""
 
     DEFAULT_CSS = """
     AddTaskScreen {
@@ -569,26 +570,36 @@ class AddTaskScreen(ModalScreen):
     }
     """
 
-    def __init__(self, column: str, **kwargs):
+    def __init__(self, column: str, task_title: str = "", **kwargs):
         self.column = column
-        self.task_title = ""
+        self.initial_title = task_title
+        self.is_edit_mode = bool(task_title)
         super().__init__(**kwargs)
 
     def compose(self) -> ComposeResult:
         with Vertical():
-            yield Label(f"Add Task to [{self.column}]")
-            yield Input(placeholder="Enter task title...", id="task_input")
-            yield Label("Press Enter to create, Esc to cancel", markup=False)
+            if self.is_edit_mode:
+                yield Label(f"Edit Task in [{self.column}]")
+                yield Input(value=self.initial_title, id="task_input")
+                yield Label("Press Enter to save, Esc to cancel", markup=False)
+            else:
+                yield Label(f"Add Task to [{self.column}]")
+                yield Input(placeholder="Enter task title...", id="task_input")
+                yield Label("Press Enter to create, Esc to cancel", markup=False)
 
     def on_mount(self) -> None:
         """Focus the input when mounted."""
-        self.query_one("#task_input", Input).focus()
+        input_widget = self.query_one("#task_input", Input)
+        input_widget.focus()
+        if self.is_edit_mode:
+            # Move cursor to end for edit mode
+            input_widget.cursor_position = len(input_widget.value)
 
     def on_input_submitted(self, event: Input.Submitted) -> None:
-        """Handle task creation when Enter is pressed."""
-        self.task_title = event.value.strip()
-        if self.task_title:
-            self.dismiss(self.task_title)
+        """Handle task creation/update when Enter is pressed."""
+        task_title = event.value.strip()
+        if task_title:
+            self.dismiss(task_title)
         else:
             self.dismiss(None)
 
@@ -612,6 +623,9 @@ class TuidoApp(App):
         Binding("r", "refresh", "Refresh"),
         Binding("s", "save", "Save"),
         Binding("a", "add_task", "Add"),
+        Binding("e", "edit_task", "Edit"),
+        Binding("d", "delete_task", "Delete"),
+        Binding("t", "change_theme", "Theme"),
         Binding("up", "navigate('up')", "Prev", show=False),
         Binding("down", "navigate('down')", "Next", show=False),
         Binding("left", "navigate('left')", "Left Col", show=False),
@@ -629,8 +643,6 @@ class TuidoApp(App):
         Binding("shift+h", "move_task('left')", "Move Left", show=False),
         Binding("shift+l", "move_task('right')", "Move Right", show=False),
         Binding("?", "help", "Help"),
-        Binding("t", "change_theme", "Theme"),
-        Binding("d", "delete_task", "Delete"),
     ]
 
     def __init__(self, board: Board, file_path, is_global_view: bool = False, **kwargs):
@@ -681,8 +693,14 @@ class TuidoApp(App):
         def on_task_added(task_title: str | None) -> None:
             """Handle the result from the add task screen."""
             if task_title:
-                task = self.board.add_task(task_title, current_column)
+                # Parse metadata from task title (tags, priority, etc.)
+                metadata = parse_task_content(task_title)
+                task = self.board.add_task(metadata["title"], current_column)
                 if task:
+                    # Apply parsed metadata
+                    task.tags = metadata["tags"]
+                    task.priority = metadata["priority"]
+                    task.project = metadata["project"]
                     self._kanban_board.refresh_board()
 
                     # Defer selection update until after DOM refresh
@@ -700,6 +718,55 @@ class TuidoApp(App):
                     self.notify(f"Failed to add task to column: {current_column}", severity="error")
 
         self.push_screen(AddTaskScreen(current_column), on_task_added)
+
+    def action_edit_task(self) -> None:
+        """Edit the currently selected task."""
+        card, current_column = self._kanban_board.get_selected_task()
+        if not card or not current_column:
+            self.notify("No task selected", severity="warning")
+            return
+
+        task = card.task_obj
+
+        # Build full task text including tags, priority, etc.
+        def format_task_for_edit(task: Task) -> str:
+            """Format task as editable text with all metadata."""
+            parts = [task.title]
+            if task.tags:
+                parts.append(" ".join(f"#{tag}" for tag in task.tags))
+            if task.priority:
+                parts.append(f"!{task.priority.upper()}")
+            return " ".join(parts)
+
+        task_text = format_task_for_edit(task)
+
+        def on_task_edited(new_title: str | None) -> None:
+            """Handle the result from the edit task screen."""
+            if new_title and new_title != task_text:
+                # Parse metadata from new title (tags, priority, etc.)
+                metadata = parse_task_content(new_title)
+                # Update the task with parsed metadata
+                task.title = metadata["title"]
+                task.tags = metadata["tags"]
+                task.priority = metadata["priority"]
+                task.project = metadata["project"]
+                # Update timestamp
+                from datetime import datetime
+                task.updated_at = datetime.now().strftime("%Y-%m-%dT%H:%M")
+                # Refresh board
+                self._kanban_board.refresh_board()
+                # Keep selection on the edited task
+                def select_edited_task_after_refresh():
+                    all_cards = self._kanban_board.get_all_task_cards()
+                    for i, card in enumerate(all_cards):
+                        if card.task_obj == task:
+                            self._kanban_board.selected_task_index = i
+                            break
+                    self._kanban_board.update_selection()
+                self._kanban_board.call_after_refresh(select_edited_task_after_refresh)
+                self.notify(f"Updated: {new_title}")
+
+        self.push_screen(AddTaskScreen(current_column, task_text), on_task_edited)
 
     def action_refresh(self) -> None:
         """Refresh the board."""
@@ -742,6 +809,7 @@ class TuidoApp(App):
 
 ## Actions
 - a - Add task to current column
+- e - Edit selected task
 - d - Delete task
 - r - Refresh from file
 - s - Save to file
