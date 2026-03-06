@@ -3,7 +3,6 @@
 from pathlib import Path
 
 import click
-
 from tuido.cmd_add import run_add_command
 from tuido.cmd_create import run_create_command
 from tuido.cmd_global_view import run_global_view_command
@@ -16,65 +15,19 @@ from tuido.ui import TuidoApp
 from tuido import util
 
 
-# Shared path argument
-path_argument = click.argument(
-    "path",
+path_option = click.option(
+    "--path",
     required=False,
     default=".",
     type=click.Path(exists=False, path_type=Path),
+    help="Path to TODO.md or directory",
 )
 
 
-class TuidoGroup(click.Group):
-    """Custom group that treats unknown commands as paths for TUI opening."""
-
-    def get_command(self, ctx, cmd_name):
-        # First try to get the command normally
-        cmd = super().get_command(ctx, cmd_name)
-        if cmd is not None:
-            return cmd
-
-        # If cmd_name looks like a path (starts with . or / or ~), treat as 'open'
-        # Return None to let Click handle the error, but we'll intercept in main()
-        return None
-
-    def resolve_command(self, ctx, args):
-        # Check if first arg is a path rather than a command
-        if args and args[0] not in self.commands and not args[0].startswith("-"):
-            # Check if it looks like a path
-            first_arg = args[0]
-            if first_arg in (".", "./", "../") or first_arg.startswith(("/", "~", ".")):
-                # Treat as open command with path
-                return super().resolve_command(ctx, ["open"] + args)
-        return super().resolve_command(ctx, args)
-
-
-@click.group(cls=TuidoGroup, invoke_without_command=True)
+@click.group()
 @click.version_option(version="0.1.0", prog_name="tuido")
-@click.option(
-    "--path",
-    "target_path",
-    default=".",
-    type=click.Path(exists=False, path_type=Path),
-    help="Path to TODO.md or directory (default: current directory)",
-)
-@click.pass_context
-def cli(ctx, target_path):
-    """A TUI Kanban board for TODO.md files.
-    \b
-    Examples:
-        tuido .                          # Open TUI with current directory's TODO.md
-        tuido create                     # Create a sample TODO.md
-        tuido add "Fix bug #bug !P0"     # Add a new task
-        tuido list                       # List all tasks
-        tuido pick                       # Pick top task and move to next column
-        tuido push                       # Push tasks to Feishu
-        tuido pull                       # Pull tasks from Feishu
-        tuido global-view                # Show global view from Feishu
-    """
-    # If no subcommand is invoked, open TUI
-    if ctx.invoked_subcommand is None:
-        _open_tui(target_path.resolve())
+def cli():
+    """A TUI Kanban board for TODO.md file."""
 
 
 def _open_tui(path: Path) -> None:
@@ -92,14 +45,14 @@ def _open_tui(path: Path) -> None:
 
 
 @cli.command(name="open")
-@path_argument
+@path_option
 def open_command(path):
-    """Open TUI Kanban board (default behavior)."""
+    """Open TUI Kanban board."""
     _open_tui(path.resolve())
 
 
 @cli.command(name="list")
-@path_argument
+@path_option
 @click.option(
     "--status",
     type=str,
@@ -129,7 +82,7 @@ def list_command(path, status, tag, priority):
 
 
 @cli.command(name="pick")
-@path_argument
+@path_option
 def pick_command(path):
     """Pick the top task from a column and move to next column."""
     todo_file = util.find_todo_file(path.resolve())
@@ -138,7 +91,7 @@ def pick_command(path):
 
 
 @cli.command(name="push")
-@path_argument
+@path_option
 def push_command(path):
     """Push tasks to Feishu table (requires remote config in TODO.md)."""
     todo_file = util.find_todo_file(path.resolve())
@@ -154,7 +107,7 @@ def push_command(path):
 
 
 @cli.command(name="pull")
-@path_argument
+@path_option
 def pull_command(path):
     """Pull tasks from Feishu table (requires remote config in TODO.md)."""
     todo_file = util.find_todo_file(path.resolve())
@@ -186,9 +139,9 @@ def global_view_command(push_flag):
 @click.option(
     "--path",
     "target_path",
-    default=".",
+    required=True,
     type=click.Path(exists=False, path_type=Path),
-    help="Path to TODO.md or directory (default: current directory)",
+    help="Path to TODO.md or directory",
 )
 def add_command(content, target_path):
     """Add a new task to TODO.md.
@@ -211,7 +164,7 @@ def add_command(content, target_path):
 
 
 @cli.command(name="create")
-@path_argument
+@path_option
 def create_command(path):
     """Create a sample TODO.md if it doesn't exist."""
     todo_file = util.find_todo_file(path.resolve())

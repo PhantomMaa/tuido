@@ -7,6 +7,7 @@
 - **语言**: Python 3.12+
 - **框架**: Textual (TUI 框架)
 - **入口**: `tuido [open|create|add|pick|list|push|pull|global-view] [options]`
+- **路径参数**: `--path` 可选，默认为当前目录 `.`
 - **配置**: `pyproject.toml` (hatchling 打包)
 
 ## 架构
@@ -243,8 +244,9 @@ remote:
 使用 `push` 子命令将任务同步到飞书多维表格：
 
 ```bash
-# 推送当前目录 TODO.md 的任务到飞书
+# 推送当前目录 TODO.md 的任务到飞书（--path 默认为 .）
 tuido push
+tuido push --path /path/to/project
 ```
 
 **要求**：
@@ -256,11 +258,9 @@ tuido push
 使用 `pull` 命令将飞书多维表格中的任务同步到本地：
 
 ```bash
-# 拉取飞书任务到当前目录 TODO.md
+# 拉取飞书任务到当前目录 TODO.md（--path 默认为 .）
 tuido pull
-
-# 拉取指定路径的 TODO.md
-tuido /path/to/project pull
+tuido pull --path /path/to/project
 ```
 
 **特性：**
@@ -281,8 +281,7 @@ tuido /path/to/project pull
 手动运行：
 ```bash
 pip install -e .
-tuido .                         # 打开看板
-tuido open .                    # 显式打开看板
+tuido open                      # 打开看板（--path 默认为 .）
 tuido create                    # 创建示例文件
 tuido add "Fix bug #bug !P0"    # 添加任务
 tuido pick                      # 选取首任务并移到下一栏

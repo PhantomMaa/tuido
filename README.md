@@ -30,11 +30,12 @@ pip install -e .
 
 ```bash
 # Open TODO.md in current directory (default)
-tuido .
-tuido
+tuido open
+tuido open --path .
 
 # Create a sample TODO.md file
 tuido create
+tuido create --path /path/to/project
 
 # List tasks (optionally filtered)
 tuido list
@@ -44,16 +45,19 @@ tuido list --priority P1
 
 # Add a new task
 tuido add "Fix bug #bug !P0"
-tuido add "Update documentation #docs"
+tuido add "Update documentation #docs" --path /path/to/project
 
 # Pick the top task and move to next column
 tuido pick
+tuido pick --path /path/to/project
 
 # Push tasks to Feishu table
 tuido push
+tuido push --path /path/to/project
 
 # Pull tasks from Feishu table
 tuido pull
+tuido pull --path /path/to/project
 
 # View all projects from Feishu (global view)
 tuido global-view
@@ -61,6 +65,8 @@ tuido global-view
 # Push global view tasks to Feishu
 tuido global-view --push
 ```
+
+**Note:** `--path` is optional for most commands and defaults to the current directory (`.`).
 
 ## Keyboard Shortcuts
 
