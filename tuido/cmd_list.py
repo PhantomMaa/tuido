@@ -1,6 +1,60 @@
 """List command for tuido."""
 
+from pathlib import Path
+
+from tuido.config import load_global_config
+from tuido.feishu import fetch_tasks
 from tuido.models import Board, Task
+
+
+def run_list_command_remote(
+    status: str | None = None,
+    tag: str | None = None,
+    priority: str | None = None,
+) -> int:
+    """List tasks from remote Feishu table.
+
+    Args:
+        status: Optional status/column to filter by (e.g., "Active").
+        tag: Optional tag to filter by (e.g., "feature").
+        priority: Optional priority to filter by (e.g., "P0", "P1").
+
+    Returns:
+        Exit code (0 for success, 1 for error).
+    """
+    config = load_global_config()
+
+    # Check required config values
+    if not config.remote.is_valid():
+        config_path = Path.home() / ".config" / "tuido" / "config.yaml"
+        missing = config.remote.get_missing_fields()
+        for field in missing:
+            print(f"Error: remote.{field} not found in {config_path}")
+        return 1
+
+    # Fetch tasks from Feishu
+    try:
+        print("Fetching tasks from Feishu...")
+        records = fetch_tasks(
+            config.remote.feishu_api_endpoint,
+            config.remote.feishu_bot_app_id,
+            config.remote.feishu_bot_app_secret,
+            config.remote.feishu_table_app_token,
+            config.remote.feishu_table_id,
+            config.remote.feishu_table_view_id,
+        )
+        print(f"Fetched {len(records)} tasks from Feishu.\n")
+
+        # Convert to Board
+        board = Board.from_feishu_records(records)
+
+        # Run list command with the fetched board
+        run_list_command(board, status=status, tag=tag, priority=priority)
+        return 0
+
+    except Exception as e:
+        print(f"Error fetching tasks from Feishu: {e}")
+        return 1
 
 
 def run_list_command(

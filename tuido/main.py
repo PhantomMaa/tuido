@@ -6,7 +6,7 @@ import click
 from tuido.cmd_add import run_add_command
 from tuido.cmd_create import run_create_command
 from tuido.cmd_global_view import run_global_view_command
-from tuido.cmd_list import run_list_command
+from tuido.cmd_list import run_list_command, run_list_command_remote
 from tuido.cmd_pick import run_pick_command
 from tuido.cmd_pull import run_pull_command
 from tuido.cmd_push import run_push_command
@@ -46,9 +46,18 @@ def _open_tui(path: Path) -> None:
 
 @cli.command(name="open")
 @path_option
-def open_command(path):
+@click.option(
+    "--remote",
+    is_flag=True,
+    help="Open remote global view from Feishu table instead of local TODO.md",
+)
+def open_command(path, remote):
     """Open TUI Kanban board."""
-    _open_tui(path.resolve())
+    if remote:
+        # Open global view from remote
+        run_global_view_command(push=False)
+    else:
+        _open_tui(path.resolve())
 
 
 @cli.command(name="list")
@@ -68,8 +77,18 @@ def open_command(path):
     type=str,
     help="Filter tasks by priority (e.g., 'P0', 'P1')",
 )
-def list_command(path, status, tag, priority):
+@click.option(
+    "--remote",
+    is_flag=True,
+    help="List tasks from remote Feishu table instead of local TODO.md",
+)
+def list_command(path, status, tag, priority, remote):
     """List tasks from TODO.md."""
+    if remote:
+        # List tasks from remote
+        exit_code = run_list_command_remote(status=status, tag=tag, priority=priority)
+        raise SystemExit(exit_code)
+
     todo_file = util.find_todo_file(path.resolve())
 
     if not todo_file.exists():
@@ -120,18 +139,6 @@ def pull_command(path):
     board = parse_todo_file(todo_file)
     exit_code = run_pull_command(board, todo_file)
     raise SystemExit(exit_code)
-
-
-@cli.command(name="global-view")
-@click.option(
-    "--push",
-    "push_flag",
-    is_flag=True,
-    help="Push global view tasks to Feishu table",
-)
-def global_view_command(push_flag):
-    """Show global view of all projects from Feishu table."""
-    run_global_view_command(push=push_flag)
 
 
 @cli.command(name="add")
