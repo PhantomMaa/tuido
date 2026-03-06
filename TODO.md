@@ -10,6 +10,8 @@ remote:
 # TUIDO
 
 ## Todo
+- 修复 'a'、'e' 按键打开的弹框，不能输入空格的问题 #bugfix ~2026-03-06T15:59
+- 修复 global-view 模式下，按键 `r` 会导致 crash #bugfix ~2026-03-06T15:59
 - 修复 `--global-view --push` 时，对 project 解析的问题，导致的比对错误 #bugfix ~2026-03-06T12:16
 - `tuido` 命令打开当前项目，`tuido .` 打开指定目录 #feature ~2026-03-06T12:38
 

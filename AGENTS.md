@@ -6,7 +6,7 @@
 
 - **语言**: Python 3.12+
 - **框架**: Textual (TUI 框架)
-- **入口**: `tuido [path|create|add|pick|list|push|pull|global-view] [options]`
+- **入口**: `tuido [open|create|add|pick|list|push|pull|global-view] [options]`
 - **配置**: `pyproject.toml` (hatchling 打包)
 
 ## 架构
@@ -14,16 +14,16 @@
 ```
 tuido/
 ├── __init__.py           # 包版本
-├── main.py               # CLI 入口 (Click)
-├── models.py             # 数据模型: Task, Board, FeishuTask, FeishuConfig
-├── parser.py             # TODO.md 读写逻辑
+├── main.py               # CLI 入口 (Click)，包含 TuidoGroup 类处理路径解析
+├── models.py             # 数据模型: Task, Board, FeishuTask, RemoteConfig, GlobalConfig
+├── parser.py             # TODO.md 读写逻辑，front matter 解析
 ├── ui.py                 # TUI 实现 (本地和全局视图共用)
 ├── cmd_list.py           # list 命令实现
 ├── cmd_add.py            # add 命令实现
 ├── cmd_pick.py           # pick 命令实现
 ├── util.py               # 工具函数
 ├── feishu.py             # 飞书 API 封装
-├── config.py             # 全局配置加载 (~/.config/tuido/config.yaml)
+├── config.py             # 全局配置加载/保存 (~/.config/tuido/config.yaml)
 ├── cmd_create.py         # create 命令实现
 ├── cmd_push.py           # push 命令实现
 ├── cmd_pull.py           # pull 命令实现
@@ -40,21 +40,16 @@ TODO.md 支持 YAML front matter 格式配置，放在文件开头：
 
 ```markdown
 ---
-theme: textual-dark
+theme: atom-one-dark
 remote:
   feishu_api_endpoint: https://open.feishu.cn/open-apis
   feishu_table_app_token: xxx
   feishu_table_id: yyy
   feishu_table_view_id: zzz
+  feishu_bot_app_id: aaa
+  feishu_bot_app_secret: bbb
 ---
 ```
-
-支持的配置项：
-- `theme`: TUI 主题 (dracula, textual-dark, nord, monokai, solarized-dark)
-- `remote.feishu_api_endpoint`: 飞书 API 端点
-- `remote.feishu_table_app_token`: 飞书多维表格 app token
-- `remote.feishu_table_id`: 飞书多维表格 ID
-- `remote.feishu_table_view_id`: 飞书多维表格视图 ID
 
 ```markdown
 ## Todo
@@ -97,17 +92,22 @@ remote:
 ## 核心类
 
 ### models.py
-- `Task`: 标题、**column(栏目名称)**、标签列表、优先级、行号
+- `Task`: 标题、**column(栏目名称)**、标签列表、优先级、项目名称、更新时间
   - `column`: 字符串，对应 TODO.md 中的二级标题
   - `project`: 项目名称（用于全局视图）
-- `Board`: 任务列表、**栏目顺序列表(columns)**、按栏目获取任务、重排序任务
+  - `updated_at`: 最后更新时间，格式 `YYYY-MM-DDTHH:MM`
+- `Board`: 标题、栏目有序字典(columns)、设置字典、任务操作方法
 - `FeishuTask`: 用于飞书同步的扁平化任务模型
-- `FeishuConfig`: 飞书配置模型，从 YAML 加载
+- `RemoteConfig`: 飞书远程配置模型，从 YAML 加载
+- `GlobalConfig`: 全局配置模型，包含主题和远程配置
 
 ### ui.py
 - `TaskCard`: 单个任务组件 (**重要: 使用 `task_obj`, 不要用 `task`**)
-- `KanbanColumn`: 列容器，包含标题和任务列表
+- `ColumnHeader`: 栏目标题组件
+- `KanbanColumn`: 列容器，包含任务列表
 - `KanbanBoard`: 本地看板主组件，处理导航、按键绑定、看板渲染
+- `TitleBar`: 应用标题栏
+- `AddTaskScreen`: 添加/编辑任务的模态对话框
 - `TuidoApp`: 主应用，支持本地模式和全局视图模式
 
 ## 键盘快捷键
@@ -119,8 +119,8 @@ remote:
 ### 任务操作
 - `Shift+←/H` - 左移 (移到上一栏目)
 - `Shift+→/L` - 右移 (移到下一栏目)
-- `Shift+↑/K` - 上移 (同列内调整顺序，支持子任务)
-- `Shift+↓/J` - 下移 (同列内调整顺序，支持子任务)
+- `Shift+↑/K` - 上移 (同列内调整顺序)
+- `Shift+↓/J` - 下移 (同列内调整顺序)
 
 ### 任务编辑
 - `a` - 添加新任务
@@ -202,11 +202,14 @@ if current_status in columns:
 
 ## 全局视图
 
-使用 `--global-view` 命令查看所有项目的任务：
+使用 `global-view` 命令查看所有项目的任务：
 
 ```bash
 # 查看全局任务列表（从飞书读取）
 tuido global-view
+
+# 推送全局视图到飞书
+tuido global-view --push
 ```
 
 **配置要求：**
@@ -214,13 +217,14 @@ tuido global-view
 全局视图需要配置 `~/.config/tuido/config.yaml`：
 
 ```yaml
-feishu:
-  api_endpoint: https://open.feishu.cn/open-apis
-  table_app_token: your_table_app_token
-  table_id: your_table_id
-  table_view_id: your_table_view_id
-  bot_app_id: your_bot_app_id
-  bot_app_secret: your_bot_app_secret
+theme: atom-one-dark
+remote:
+  feishu_api_endpoint: https://open.feishu.cn/open-apis
+  feishu_table_app_token: your_table_app_token
+  feishu_table_id: your_table_id
+  feishu_table_view_id: your_table_view_id
+  feishu_bot_app_id: your_bot_app_id
+  feishu_bot_app_secret: your_bot_app_secret
 ```
 
 **实现方式：**
@@ -228,7 +232,7 @@ feishu:
 
 **特性：**
 - 任务标题显示格式：`[项目名] 任务名`
-- 按状态自动分栏（Todo, Active, Review, Blocked, Done）
+- 按状态自动分栏（Todo, Active, Review, Done 及自定义栏目）
 - 主题切换会自动保存到全局配置
 - 支持 `--push` 参数推送任务到飞书
 
@@ -244,12 +248,12 @@ tuido push
 ```
 
 **要求**：
-1. `~/.config/tuido/config.yaml` 中配置了 `feishu.bot_app_id` 和 `feishu.bot_app_secret`
+1. `~/.config/tuido/config.yaml` 中配置了 `remote.feishu_bot_app_id` 和 `remote.feishu_bot_app_secret`
 2. TODO.md 的 front matter 中配置了 `remote.feishu_api_endpoint`, `remote.feishu_table_app_token`, `remote.feishu_table_id`, `remote.feishu_table_view_id`
 
 ### 从飞书拉取任务到本地
 
-使用 `--pull` 命令将飞书多维表格中的任务同步到本地：
+使用 `pull` 命令将飞书多维表格中的任务同步到本地：
 
 ```bash
 # 拉取飞书任务到当前目录 TODO.md
@@ -270,6 +274,7 @@ tuido /path/to/project pull
 - `Status`: 任务状态（栏目名称）
 - `Tags`: 标签（逗号分隔）
 - `Priority`: 优先级
+- `Timestamp`: 时间戳
 
 ## 测试
 
@@ -277,6 +282,7 @@ tuido /path/to/project pull
 ```bash
 pip install -e .
 tuido .                         # 打开看板
+tuido open .                    # 显式打开看板
 tuido create                    # 创建示例文件
 tuido add "Fix bug #bug !P0"    # 添加任务
 tuido pick                      # 选取首任务并移到下一栏
@@ -291,9 +297,9 @@ tuido global-view --push        # 推送全局视图到飞书
 
 - `textual` - TUI 框架
 - `rich` - 终端格式化 (textual 自带)
+- `pydantic` - 数据模型验证
 - `requests` - HTTP 请求
 - `pyyaml` - YAML 解析
-- `loguru` - 日志
 
 开发安装：
 ```bash
