@@ -668,6 +668,10 @@ class TuidoApp(App):
 
     def action_move_task(self, direction: str) -> None:
         """Move task to adjacent column or reorder."""
+        # global_mode 模式下不允许上下调整顺序
+        if self.global_mode and direction in ("up", "down"):
+            self.notify("Cannot reorder tasks in global view mode", severity="warning")
+            return
         if self._kanban_board:
             self._kanban_board.move_task(direction)
 

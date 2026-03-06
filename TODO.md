@@ -10,11 +10,11 @@ remote:
 # TUIDO
 
 ## Todo
-- 修复 `--global-view --push` 时，对 project 解析的问题，导致的比对错误 #bugfix ~2026-03-06T12:16
 
 ## Active
 
 ## Done
+- 修复 `--global-view --push` 时，对 project 解析的问题，导致的比对错误 #bugfix ~2026-03-06T23:58
 - 改进命令行帮助信息，添加更多使用示例 #docs ~2026-03-06T12:37
 - 在 global-view 模式下，不允许使用按键 `r` #bugfix ~2026-03-06T23:51
 - 增加 `tuido pick` 命令，在 TODO 里挑选最顶端的任务返回，并移动至下个栏目 ~2026-03-06T12:09

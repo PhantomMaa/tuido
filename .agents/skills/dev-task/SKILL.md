@@ -1,6 +1,6 @@
 ---
 name: dev-task
-description: 开发任务管理。到本地代码仓库，使用 `tuido` 命令领取和查看开发任务（读取自项目下 TODO.md）。在 github 中新建 Issue 编写方案，确认方案后，再做具体的分支开发，以及提交 PR。
+description: 开发任务管理。到本地代码仓库，使用 `tuido` 命令领取和查看开发任务（读取自项目下 TODO.md）。在 github 中新建 Issue 编写方案。用户确认方案后，再做具体的分支开发，以及提交 PR。
 ---
 
 # Dev Task Skill
