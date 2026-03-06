@@ -6,7 +6,7 @@ import click
 from loguru import logger
 from tuido.cmd_add import run_add_command
 from tuido.cmd_create import run_create_command
-from tuido.cmd_global_view import run_global_view_command
+from tuido.global_view import GLOBAL_VIEW_TEMP_FILE, fetch_remote_to_tmp_file
 from tuido.cmd_list import run_list_command, run_list_command_remote
 from tuido.cmd_pick import run_pick_command
 from tuido.cmd_pull import run_pull_command
@@ -31,34 +31,32 @@ def cli():
     """A TUI Kanban board for TODO.md file."""
 
 
-def _open_tui(path: Path) -> None:
-    """Open the TUI with the given path."""
-    todo_file = util.find_todo_file(path)
-
-    if not todo_file.exists():
-        click.echo(f"Error: TODO.md not found at {todo_file}", err=True)
-        click.echo("Use 'tuido create' to create a sample file.", err=True)
-        raise SystemExit(1)
-
-    board = parse_todo_file(todo_file)
-    app = TuidoApp(board, todo_file)
-    app.run()
-
-
-@cli.command(name="open")
+@cli.command(name="tui")
 @path_option
 @click.option(
     "--remote",
     is_flag=True,
     help="Open remote global view from Feishu table instead of local TODO.md",
 )
-def open_command(path, remote):
+def tui_command(path: Path, remote: bool):
     """Open TUI Kanban board."""
+    file_path = path
     if remote:
-        # Open global view from remote
-        run_global_view_command(push=False)
-    else:
-        _open_tui(path.resolve())
+        exit_code = fetch_remote_to_tmp_file()
+        if exit_code != 0:
+            raise SystemExit(exit_code)
+
+        file_path = Path(GLOBAL_VIEW_TEMP_FILE)
+
+    todo_file = util.find_todo_file(file_path)
+    if not todo_file.exists():
+        click.echo(f"Error: TODO.md not found at {todo_file}", err=True)
+        click.echo("Use 'tuido create' to create a sample file.", err=True)
+        raise SystemExit(1)
+
+    board = parse_todo_file(todo_file)
+    app = TuidoApp(board, todo_file, global_mode=remote)
+    app.run()
 
 
 @cli.command(name="list")
@@ -83,7 +81,7 @@ def open_command(path, remote):
     is_flag=True,
     help="List tasks from remote Feishu table instead of local TODO.md",
 )
-def list_command(path, status, tag, priority, remote):
+def list_command(path: Path, status: str, tag: str, priority: str, remote: bool):
     """List tasks from TODO.md."""
     if remote:
         # List tasks from remote
@@ -103,7 +101,7 @@ def list_command(path, status, tag, priority, remote):
 
 @cli.command(name="pick")
 @path_option
-def pick_command(path):
+def pick_command(path: Path):
     """Pick the top task from a column and move to next column."""
     todo_file = util.find_todo_file(path.resolve())
     exit_code = run_pick_command(todo_file)
@@ -112,7 +110,7 @@ def pick_command(path):
 
 @cli.command(name="push")
 @path_option
-def push_command(path):
+def push_command(path: Path):
     """Push tasks to Feishu table (requires remote config in TODO.md)."""
     todo_file = util.find_todo_file(path.resolve())
 
@@ -128,7 +126,7 @@ def push_command(path):
 
 @cli.command(name="pull")
 @path_option
-def pull_command(path):
+def pull_command(path: Path):
     """Pull tasks from Feishu table (requires remote config in TODO.md)."""
     todo_file = util.find_todo_file(path.resolve())
 
@@ -151,7 +149,7 @@ def pull_command(path):
     type=click.Path(exists=False, path_type=Path),
     help="Path to TODO.md or directory",
 )
-def add_command(content, target_path):
+def add_command(content: str, target_path: Path):
     """Add a new task to TODO.md.
 
     The content can include tags (#tag) and priority (!P0-4).
@@ -173,7 +171,7 @@ def add_command(content, target_path):
 
 @cli.command(name="create")
 @path_option
-def create_command(path):
+def create_command(path: Path):
     """Create a sample TODO.md if it doesn't exist."""
     todo_file = util.find_todo_file(path.resolve())
     run_create_command(todo_file)

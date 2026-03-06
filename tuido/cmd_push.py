@@ -332,7 +332,7 @@ remote:
         return fail_count == 0
 
 
-def run_push_command(board: Board, todo_file: Path, is_global_view: bool = False) -> int:
+def run_push_command(board: Board, todo_file: Path) -> int:
     """Run the push command.
 
     Args:
@@ -342,14 +342,11 @@ def run_push_command(board: Board, todo_file: Path, is_global_view: bool = False
     Returns:
         Exit code (0 for success, 1 for failure)
     """
-    if is_global_view:
-        project = None
+    # Use parent directory name as project name
+    if todo_file.is_dir():
+        project = todo_file.name
     else:
-        # Use parent directory name as project name
-        if todo_file.is_dir():
-            project = todo_file.name
-        else:
-            project = todo_file.parent.name
+        project = todo_file.parent.name
 
     success = push_to_feishu(board, project)
     return 0 if success else 1

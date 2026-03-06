@@ -56,8 +56,8 @@ def run_list_command_remote(
 
 
 def run_list_command(
-    board: Board, 
-    status: str | None = None, 
+    board: Board,
+    status: str | None = None,
     tag: str | None = None,
     priority: str | None = None,
 ) -> None:
@@ -71,22 +71,22 @@ def run_list_command(
     """
     # Collect all tasks from board
     all_tasks: list[Task] = []
-    
+
     for column_tasks in board.columns.values():
         all_tasks.extend(column_tasks)
-    
+
     # Apply filters
     filtered_tasks = all_tasks
-    
+
     if status:
         filtered_tasks = [t for t in filtered_tasks if t.column == status]
-    
+
     if tag:
         filtered_tasks = [t for t in filtered_tasks if tag in t.tags]
-    
+
     if priority:
         filtered_tasks = [t for t in filtered_tasks if t.priority == priority]
-    
+
     # Display results
     if not filtered_tasks:
         filters = []
@@ -99,7 +99,7 @@ def run_list_command(
         filter_str = ", ".join(filters) if filters else "any tasks"
         print(f"No tasks found matching {filter_str}")
         return
-    
+
     # Group by column for display
     tasks_by_column: dict[str, list[Task]] = {}
     for task in filtered_tasks:
@@ -107,7 +107,7 @@ def run_list_command(
         if col not in tasks_by_column:
             tasks_by_column[col] = []
         tasks_by_column[col].append(task)
-    
+
     # Print tasks grouped by column
     first_column = True
     for column, tasks in tasks_by_column.items():

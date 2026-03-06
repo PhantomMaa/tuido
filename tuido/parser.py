@@ -21,8 +21,8 @@ def parse_task_content(content: str) -> dict:
         content = re.sub(timestamp_pattern, "", content).strip()
 
     # Extract project from trailing [project] format (global view)
-    # Match pattern like "task title [ProjectName]" at the end (after timestamp is removed)
-    project_pattern = r"\[([^\]]+)\]$"
+    # Match pattern like "task title 「ProjectName」" (after timestamp is removed)
+    project_pattern = r"\「([^\]]+?)\」\s*"
     project_match = re.search(project_pattern, content)
     if project_match:
         result["project"] = project_match.group(1).strip()
@@ -48,7 +48,7 @@ def parse_task_content(content: str) -> dict:
 
 def parse_front_matter(lines: list[str]) -> tuple[dict, int]:
     """Parse YAML front matter from the beginning of file.
-    
+
     Standard format:
         ---
         key: value
@@ -57,56 +57,56 @@ def parse_front_matter(lines: list[str]) -> tuple[dict, int]:
         ---
         # Title
         content...
-    
+
     Supports nested blocks with 2-space indentation.
     Returns (settings_dict, line_index_to_continue_parsing)
     """
     settings = {}
-    
+
     if len(lines) < 2:
         return settings, 0
-    
+
     # File must start with '---'
-    if lines[0].strip() != '---':
+    if lines[0].strip() != "---":
         return settings, 0
-    
+
     # Find closing '---'
     end_idx = -1
     for i in range(1, len(lines)):
-        if lines[i].strip() == '---':
+        if lines[i].strip() == "---":
             end_idx = i
             break
-    
+
     if end_idx == -1:
         return settings, 0
-    
+
     # Parse settings content between --- markers with support for nested blocks
     current_nested_key = None
-    
+
     for i in range(1, end_idx):
         line = lines[i]
         stripped = line.strip()
-        
-        if not stripped or stripped.startswith('#'):
+
+        if not stripped or stripped.startswith("#"):
             continue
-        
+
         # Check if this is a nested block start (key: with no value, followed by indented content)
         # or a simple key: value
-        if ':' in stripped:
-            key, value = stripped.split(':', 1)
+        if ":" in stripped:
+            key, value = stripped.split(":", 1)
             key = key.strip()
             value = value.strip()
-            
+
             # Check if next non-empty line is indented (indicating a nested block)
             next_line_indent = 0
             for j in range(i + 1, end_idx):
                 next_stripped = lines[j].strip()
-                if next_stripped and not next_stripped.startswith('#'):
+                if next_stripped and not next_stripped.startswith("#"):
                     next_line_indent = len(lines[j]) - len(lines[j].lstrip())
                     break
-            
+
             current_indent = len(line) - len(line.lstrip())
-            
+
             if not value and next_line_indent > current_indent:
                 # This is a nested block start
                 current_nested_key = key
@@ -127,34 +127,27 @@ def parse_front_matter(lines: list[str]) -> tuple[dict, int]:
             current_indent = len(line) - len(line.lstrip())
             if current_indent == 0:
                 current_nested_key = None
-    
+
     return settings, end_idx + 1
 
 
 def parse_todo_file(file_path: Path) -> Board:
-    """Parse a TODO.md file and return a Board.
-    
-    栏目(Column)从二级标题(##)读取，按文件中的顺序展示。
-    """
-    board = Board(title="TODO Board")
-
+    """Parse a TODO.md file and return a Board."""
     if not file_path.exists():
-        # 默认栏目
-        board.columns = {"Todo": [], "Active": [], "Done": []}
-        return board
+        raise FileNotFoundError(f"TODO.md not found at {file_path}")
 
     with open(file_path, "r", encoding="utf-8") as f:
         lines = f.readlines()
 
     # Parse front matter settings
     settings, start_idx = parse_front_matter(lines)
+
+    board = Board(title="TODO Board")
     board.settings = settings
 
     current_column = None
-
     for _, line in enumerate(lines[start_idx:], start_idx + 1):
         stripped = line.strip()
-
         if not stripped:
             continue
 
@@ -174,7 +167,7 @@ def parse_todo_file(file_path: Path) -> Board:
                 current_column = "Todo"
                 if current_column not in board.columns:
                     board.columns[current_column] = []
-            
+
             content = stripped[2:].strip()
             metadata = parse_task_content(content)
 
@@ -186,13 +179,13 @@ def parse_todo_file(file_path: Path) -> Board:
                 project=metadata["project"],
                 updated_at=metadata["updated_at"],
             )
-            
+
             board.columns[current_column].append(task)
 
     # 如果没有解析到任何栏目，使用默认值
     if not board.columns:
         board.columns = {"Todo": [], "Active": [], "Done": []}
-    
+
     return board
 
 
@@ -218,7 +211,7 @@ def save_todo_file(file_path: Path, board: Board) -> None:
         lines.append(yaml_content)
         lines.append("---\n")
         lines.append("\n")
-    
+
     lines.append("# TUIDO\n")
     lines.append("\n")
 
@@ -226,7 +219,7 @@ def save_todo_file(file_path: Path, board: Board) -> None:
         """Format a task as markdown."""
         content = task.title
         if task.project:
-            content += f" [{task.project}]"
+            content += f" 「{task.project}」"
         if task.tags:
             content += " " + " ".join(f"#{tag}" for tag in task.tags)
         if task.priority:

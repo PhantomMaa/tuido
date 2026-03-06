@@ -139,7 +139,7 @@ class TaskCard(Static):
         # Project name (for global view) - shown in blue
         if self.task_obj.project:
             # 只需转义左方括号
-            meta_parts.append(f"[blue bold]\\[{self.task_obj.project}][/blue bold]")
+            meta_parts.append(f"[blue bold]「{self.task_obj.project}」[/blue bold]")
 
         if self.task_obj.priority:
             priority_colors = {
@@ -645,10 +645,10 @@ class TuidoApp(App):
         Binding("?", "help", "Help"),
     ]
 
-    def __init__(self, board: Board, file_path, is_global_view: bool = False, **kwargs):
+    def __init__(self, board: Board, file_path, global_mode: bool = False, **kwargs):
         self.board = board
         self.file_path = file_path
-        self.is_global_view = is_global_view
+        self.global_mode = global_mode
         self._kanban_board: KanbanBoard = KanbanBoard(self.board)
         super().__init__(**kwargs)
 
@@ -752,9 +752,11 @@ class TuidoApp(App):
                 task.project = metadata["project"]
                 # Update timestamp
                 from datetime import datetime
+
                 task.updated_at = datetime.now().strftime("%Y-%m-%dT%H:%M")
                 # Refresh board
                 self._kanban_board.refresh_board()
+
                 # Keep selection on the edited task
                 def select_edited_task_after_refresh():
                     all_cards = self._kanban_board.get_all_task_cards()
@@ -763,6 +765,7 @@ class TuidoApp(App):
                             self._kanban_board.selected_task_index = i
                             break
                     self._kanban_board.update_selection()
+
                 self._kanban_board.call_after_refresh(select_edited_task_after_refresh)
                 self.notify(f"Updated: {new_title}")
 
@@ -770,7 +773,7 @@ class TuidoApp(App):
 
     def action_refresh(self) -> None:
         """Refresh the board."""
-        if self.is_global_view:
+        if self.global_mode:
             self.notify("Refresh is not available in global view mode", severity="warning")
             return
 
@@ -836,7 +839,7 @@ class TuidoApp(App):
         self.board.settings["theme"] = next_theme
         self.theme = next_theme
 
-        if self.is_global_view:
+        if self.global_mode:
             # Global view: save theme to global config
             from .config import save_global_theme
 
