@@ -770,6 +770,10 @@ class TuidoApp(App):
 
     def action_refresh(self) -> None:
         """Refresh the board."""
+        if self.is_global_view:
+            self.notify("Refresh is not available in global view mode", severity="warning")
+            return
+
         from .parser import parse_todo_file
 
         self.board = parse_todo_file(self.file_path)
