@@ -243,7 +243,7 @@ def pull_from_feishu(board: Board, project: str, dry_run: bool = False) -> tuple
 
     Args:
         board: The Board object containing local tasks
-        project_name: Project name to identify tasks in Feishu
+        project: Project name to identify tasks in Feishu
         dry_run: If True, only preview changes without applying
 
     Returns:

@@ -135,12 +135,12 @@ def print_diff_preview(
     print(f"{'='*60}\n")
 
 
-def push_to_feishu(board: Board, project_name: str | None) -> bool:
+def push_to_feishu(board: Board, project: str | None) -> bool:
     """Push tasks to Feishu table.
 
     Args:
         board: The Board object containing tasks
-        project_name: Project name to identify tasks in Feishu
+        project: Project name to identify tasks in Feishu
         dry_run: If True, only preview changes without pushing
 
     Returns:
@@ -189,7 +189,7 @@ remote:
         for task in task_list:
             feishu_task = FeishuTask(
                 title=task.title,
-                project=project_name,
+                project=project,
                 status=column_name,
                 tags=task.tags,
                 priority=task.priority or "",
@@ -203,7 +203,7 @@ remote:
 
     # Fetch existing remote records for this project
     try:
-        print(f"Fetching existing records from Feishu for project '{project_name}'...")
+        print(f"Fetching existing records from Feishu for project '{project}'...")
         remote_tasks = fetch_tasks(
             api_endpoint,
             global_config.remote.feishu_bot_app_id,
@@ -211,7 +211,7 @@ remote:
             table_app_token,
             table_id,
             view_id,
-            project=project_name,
+            project=project,
         )
         print(f"Found {len(remote_tasks)} existing records.")
     except Exception as e:
@@ -343,13 +343,13 @@ def run_push_command(board: Board, todo_file: Path, is_global_view: bool = False
         Exit code (0 for success, 1 for failure)
     """
     if is_global_view:
-        project_name = None
+        project = None
     else:
         # Use parent directory name as project name
         if todo_file.is_dir():
-            project_name = todo_file.name
+            project = todo_file.name
         else:
-            project_name = todo_file.parent.name
+            project = todo_file.parent.name
 
-    success = push_to_feishu(board, project_name)
+    success = push_to_feishu(board, project)
     return 0 if success else 1
