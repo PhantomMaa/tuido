@@ -10,11 +10,11 @@ remote:
 # TUIDO
 
 ## Todo
-- `tuido add` 如果当前目录没有 TODO.md，则添加到 remote ~2026-03-09T10:53
 
 ## Active
 
 ## Done
+- `tuido add` 如果当前目录没有 TODO.md，则添加到 remote ~2026-03-09T14:28
 - 修复 `--global-view --push` 时，对 project 解析的问题，导致的比对错误 #bugfix ~2026-03-06T23:58
 - 改进命令行帮助信息，添加更多使用示例 #docs ~2026-03-06T12:37
 - 在 global-view 模式下，不允许使用按键 `r` #bugfix ~2026-03-06T23:51

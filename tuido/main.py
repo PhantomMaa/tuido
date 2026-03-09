@@ -5,7 +5,7 @@ from pathlib import Path
 
 import click
 from loguru import logger
-from tuido.cmd_add import run_add_command
+from tuido.cmd_add import run_add_command, run_add_command_remote
 from tuido.cmd_create import run_create_command
 from tuido.cmd_tui import run_tui_command
 from tuido.cmd_list import run_list_command, run_list_command_remote
@@ -119,29 +119,36 @@ def pull_command(path: Path) -> int:
 
 
 @cli.command(name="add")
+@path_option
 @click.argument("content", required=True)
 @click.option(
-    "--path",
-    "target_path",
-    required=False,
-    default=".",
-    type=click.Path(exists=False, path_type=Path),
-    help="Path to TODO.md or directory",
+    "--remote",
+    is_flag=True,
+    help="Add task to remote Feishu table instead of local TODO.md",
 )
-def add_command(content: str, target_path: Path) -> int:
+def add_command(path: Path, content: str, remote: bool) -> int:
     """Add a new task to TODO.md or Feishu.
 
     If TODO.md exists locally, the task will be added to it.
-    If not, and Feishu is configured, the task will be added directly to Feishu table.
+    Use --remote to add directly to Feishu table.
 
     The content can include tags (#tag) and priority (!P0-4).
     Examples:
         tuido add 'Fix login bug #bug !P0'
         tuido add 'Update documentation #docs'
+        tuido add 'New feature #enhancement !P1' --remote
     """
-    todo_file = util.find_todo_file(target_path.resolve())
+    if remote:
+        # List tasks from remote
+        return run_add_command_remote(content)
 
-    return run_add_command(todo_file, content=content)
+    todo_file = util.find_todo_file(path.resolve())
+    if not todo_file.exists():
+        click.echo(f"Error: TODO.md not found at {todo_file}", err=True)
+        click.echo("Use 'tuido create' to create a sample file.", err=True)
+        return 1
+
+    return run_add_command(todo_file, content)
 
 
 @cli.command(name="create")

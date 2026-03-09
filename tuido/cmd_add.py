@@ -4,6 +4,7 @@ from pathlib import Path
 import click
 from tuido.config import load_global_config
 from tuido.models import GlobalConfig
+from datetime import datetime
 
 
 def _print_feishu_config_error() -> None:
@@ -47,8 +48,8 @@ def _create_feishu_record(global_config: "GlobalConfig", fields: dict) -> bool:
     return bot.batch_create([record])
 
 
-def add_to_feishu(content: str) -> int:
-    """Add a task directly to Feishu table when no local TODO.md exists.
+def run_add_command_remote(content: str) -> int:
+    """Add a task directly to Feishu table.
 
     Args:
         content: Task content (title, tags, priority etc.)
@@ -107,12 +108,6 @@ def run_add_command(todo_file: Path, content: str) -> int:
     Returns:
         Exit code (0 for success, 1 for error)
     """
-    from datetime import datetime
-
-    # Read existing content
-    if not todo_file.exists():
-        # No local TODO.md, try to add directly to Feishu
-        return add_to_feishu(content)
 
     existing_content = todo_file.read_text(encoding="utf-8")
 
