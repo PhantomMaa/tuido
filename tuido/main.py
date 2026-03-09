@@ -146,11 +146,45 @@ def add_command(content: str, target_path: Path) -> int:
     """
     todo_file = util.find_todo_file(target_path.resolve())
 
-    # If file doesn't exist, create it first
+    # If file doesn't exist, try to pull from remote first
     if not todo_file.exists():
-        click.echo(f"TODO.md not found at {todo_file}", err=True)
-        click.echo("Use 'tuido create' to create a sample file first.", err=True)
-        return 1
+        from tuido.config import load_global_config
+        from tuido.models import Board
+        from tuido.parser import save_todo_file
+        from tuido.cmd_pull import pull_from_feishu
+
+        global_config = load_global_config()
+        if not global_config.remote.is_valid():
+            click.echo(f"TODO.md not found at {todo_file}", err=True)
+            click.echo("Remote configuration not available. Use 'tuido create' to create a sample file first.", err=True)
+            return 1
+
+        # Create a temporary Board with remote settings from global config
+        board = Board(title="TUIDO")
+        board.settings = {
+            "remote": {
+                "api_endpoint": global_config.remote.feishu_api_endpoint,
+                "table_app_token": global_config.remote.feishu_table_app_token,
+                "table_id": global_config.remote.feishu_table_id,
+                "view_id": global_config.remote.feishu_table_view_id,
+            }
+        }
+
+        # Determine project name from directory
+        project = todo_file.parent.name
+
+        click.echo(f"TODO.md not found. Pulling from remote for project '{project}'...")
+
+        # Pull from remote (auto_confirm=True to skip interactive confirmation)
+        success, updated_board = pull_from_feishu(board, project, dry_run=False, auto_confirm=True)
+
+        if not success:
+            click.echo("Failed to pull from remote.", err=True)
+            return 1
+
+        # Save the pulled content to file
+        save_todo_file(todo_file, updated_board)
+        click.echo(f"✓ Pulled tasks from remote to {todo_file}")
 
     return run_add_command(todo_file, content=content)
 

@@ -238,7 +238,7 @@ def apply_remote_changes(
     return new_board
 
 
-def pull_from_feishu(board: Board, project: str, dry_run: bool = False) -> tuple[bool, Board]:
+def pull_from_feishu(board: Board, project: str, dry_run: bool = False, auto_confirm: bool = False) -> tuple[bool, Board]:
     """Pull tasks from Feishu table.
 
     Args:
@@ -319,18 +319,19 @@ remote:
         print("No changes to pull. All tasks are already in sync.")
         return True, board
 
-    # Ask for confirmation
-    print(f"即将拉取 {len(new_tasks) + len(modified_tasks) + len(deleted_tasks)} 个变更到本地:")
-    if new_tasks:
-        print(f"  - 新增: {len(new_tasks)} 个")
-    if modified_tasks:
-        print(f"  - 变更: {len(modified_tasks)} 个")
-    if deleted_tasks:
-        print(f"  - 删除: {len(deleted_tasks)} 个")
-    response = input("\n确认执行? (y/N): ").strip().lower()
-    if response not in ("y", "yes"):
-        print("已取消拉取。")
-        return True, board
+    # Ask for confirmation (unless auto_confirm is True)
+    if not auto_confirm:
+        print(f"即将拉取 {len(new_tasks) + len(modified_tasks) + len(deleted_tasks)} 个变更到本地:")
+        if new_tasks:
+            print(f"  - 新增: {len(new_tasks)} 个")
+        if modified_tasks:
+            print(f"  - 变更: {len(modified_tasks)} 个")
+        if deleted_tasks:
+            print(f"  - 删除: {len(deleted_tasks)} 个")
+        response = input("\n确认执行? (y/N): ").strip().lower()
+        if response not in ("y", "yes"):
+            print("已取消拉取。")
+            return True, board
 
     # Apply changes
     try:
