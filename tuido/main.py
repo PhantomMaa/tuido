@@ -157,10 +157,10 @@ def add_command(content: str, target_path: Path) -> int:
 
 @cli.command(name="create")
 @path_option
-def create_command(path: Path):
+def create_command(path: Path) -> int:
     """Create a sample TODO.md if it doesn't exist."""
     todo_file = util.find_todo_file(path.resolve())
-    run_create_command(todo_file)
+    return run_create_command(todo_file)
 
 
 def main():
