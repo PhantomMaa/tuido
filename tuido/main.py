@@ -9,7 +9,6 @@ from tuido.cmd_add import run_add_command
 from tuido.cmd_create import run_create_command
 from tuido.cmd_tui import run_tui_command
 from tuido.cmd_list import run_list_command, run_list_command_remote
-from tuido.cmd_pick import run_pick_command
 from tuido.cmd_pull import run_pull_command
 from tuido.cmd_push import run_push_command, run_push_command_remote
 from tuido.parser import parse_todo_file
@@ -80,14 +79,6 @@ def list_command(path: Path, status: str, tag: str, priority: str, remote: bool)
     board = parse_todo_file(todo_file)
     run_list_command(board, status=status, tag=tag, priority=priority)
     return 0
-
-
-@cli.command(name="pick")
-@path_option
-def pick_command(path: Path) -> int:
-    """Pick the top task from a column and move to next column."""
-    todo_file = util.find_todo_file(path.resolve())
-    return run_pick_command(todo_file)
 
 
 @cli.command(name="push")

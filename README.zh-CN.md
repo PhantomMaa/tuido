@@ -47,10 +47,6 @@ tuido list --priority P1
 tuido add '修复 bug #bug !P0'
 tuido add '更新文档 #docs' --path /path/to/project
 
-# 选取顶部任务并移动到下一列
-tuido pick
-tuido pick --path /path/to/project
-
 # 推送任务到飞书表格
 tuido push
 tuidu push --path /path/to/project

@@ -6,7 +6,7 @@
 
 - **语言**: Python 3.12+
 - **框架**: Textual (TUI 框架)
-- **入口**: `tuido [tui|create|add|pick|list|push|pull] [options]`
+- **入口**: `tuido [tui|create|add|list|push|pull] [options]`
 - **路径参数**: `--path` 可选，默认为当前目录 `.`
 - **配置**: `pyproject.toml` (hatchling 打包)
 
@@ -21,7 +21,6 @@ tuido/
 ├── ui.py                 # TUI 实现 (本地和全局视图共用)
 ├── cmd_list.py           # list 命令实现
 ├── cmd_add.py            # add 命令实现
-├── cmd_pick.py           # pick 命令实现
 ├── util.py               # 工具函数
 ├── feishu.py             # 飞书 API 封装
 ├── config.py             # 全局配置加载/保存 (~/.config/tuido/config.yaml)
@@ -183,15 +182,14 @@ if current_status in columns:
 
 ```python
 # main.py - 命令函数返回 exit code
-@cli.command(name="pick")
+@cli.command(name="list")
 @path_option
-def pick_command(path: Path) -> int:
-    """Pick the top task from a column and move to next column."""
+def list_command(path: Path) -> int:
     todo_file = util.find_todo_file(path.resolve())
-    return run_pick_command(todo_file)  # 返回 int exit code
+    return run_list_command(todo_file)  # 返回 int exit code
 
 # cmd_*.py - 子命令实现也返回 exit code
-def run_pick_command(todo_file: Path) -> int:
+def run_list_command(todo_file: Path) -> int:
     if not todo_file.exists():
         click.echo(f"Error: TODO.md not found", err=True)
         return 1  # 错误返回 1
@@ -318,7 +316,6 @@ tuido tui                       # 打开看板（--path 默认为 .）
 tuido tui --remote              # 打开全局视图（从飞书读取）
 tuido create                    # 创建示例文件
 tuido add 'Fix bug #bug !P0'    # 添加任务
-tuido pick                      # 选取首任务并移到下一栏
 tuido list                      # 列出所有任务
 tuido list --remote             # 列出飞书上的任务
 tuido push                      # 推送到飞书

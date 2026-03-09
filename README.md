@@ -49,10 +49,6 @@ tuido list --priority P1
 tuido add 'Fix bug #bug !P0'
 tuido add 'Update documentation #docs' --path /path/to/project
 
-# Pick the top task and move to next column
-tuido pick
-tuido pick --path /path/to/project
-
 # Push tasks to Feishu table
 tuido push
 tuido push --path /path/to/project
