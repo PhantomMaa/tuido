@@ -1,9 +1,50 @@
 """Command for adding a new task to TODO.md."""
 
-import re
 from pathlib import Path
-
 import click
+from tuido.config import load_global_config
+from tuido.models import GlobalConfig
+
+
+def _print_feishu_config_error() -> None:
+    """Print Feishu configuration error message."""
+    config_path = Path.home() / ".config" / "tuido" / "config.yaml"
+    click.echo(f"Error: Missing Feishu configuration in {config_path}", err=True)
+    click.echo("\nPlease add the following to your config:", err=True)
+    click.echo(
+        """remote:
+  feishu_api_endpoint: https://open.feishu.cn/open-apis
+  feishu_table_app_token: your_table_app_token
+  feishu_table_id: your_table_id
+  feishu_table_view_id: your_table_view_id
+  feishu_bot_app_id: your_bot_app_id
+  feishu_bot_app_secret: your_bot_app_secret""",
+        err=True,
+    )
+
+
+def _create_feishu_record(global_config: "GlobalConfig", fields: dict) -> bool:
+    """Create a record in Feishu table.
+
+    Args:
+        global_config: Global configuration with Feishu credentials
+        fields: Record fields to create
+
+    Returns:
+        True if successful, False otherwise
+    """
+    from tuido.feishu import FeishuTable
+
+    bot = FeishuTable(
+        global_config.remote.feishu_api_endpoint,
+        global_config.remote.feishu_bot_app_id,
+        global_config.remote.feishu_bot_app_secret,
+        global_config.remote.feishu_table_app_token,
+        global_config.remote.feishu_table_id,
+    )
+
+    record = {"fields": fields}
+    return bot.batch_create([record])
 
 
 def add_to_feishu(content: str) -> int:
@@ -17,77 +58,35 @@ def add_to_feishu(content: str) -> int:
     """
     from datetime import datetime
 
-    from tuido.config import load_global_config
-    from tuido.feishu import FeishuTable
     from tuido import util
+    from tuido.parser import parse_task_content
 
-    # Load global config
+    # Check Feishu config
     global_config = load_global_config()
-
     if not global_config.remote.is_valid():
-        config_path = Path.home() / ".config" / "tuido" / "config.yaml"
-        missing = global_config.remote.get_missing_fields()
-        click.echo(f"Error: Missing Feishu configuration in {config_path}", err=True)
-        for field in missing:
-            click.echo(f"  - remote.{field}", err=True)
-        click.echo("\nPlease add the following to your config:", err=True)
-        click.echo(
-            """remote:
-  feishu_api_endpoint: https://open.feishu.cn/open-apis
-  feishu_table_app_token: your_table_app_token
-  feishu_table_id: your_table_id
-  feishu_table_view_id: your_table_view_id
-  feishu_bot_app_id: your_bot_app_id
-  feishu_bot_app_secret: your_bot_app_secret""",
-            err=True,
-        )
+        _print_feishu_config_error()
         return 1
 
-    # Parse content for tags and priority
-    tags = []
-    priority = ""
-    title = content
+    # Parse content using shared parser
+    parsed = parse_task_content(content)
 
-    # Extract tags (#tag)
-    tag_matches = re.findall(r"#(\w+)", content)
-    if tag_matches:
-        tags = tag_matches
-        title = re.sub(r"#\w+", "", title).strip()
-
-    # Extract priority (!P0-4)
-    priority_match = re.search(r"!P([0-4])", content)
-    if priority_match:
-        priority = f"P{priority_match.group(1)}"
-        title = re.sub(r"!P[0-4]", "", title).strip()
-
-    # Get current timestamp
+    # Get current timestamp and project
     timestamp = datetime.now().strftime("%Y-%m-%dT%H:%M")
-
-    # Get project name from current directory
     project = Path.cwd().name
 
     # Prepare record fields
     fields = {
-        "Task": title,
+        "Task": parsed["title"] or content,
         "Project": project,
         "Status": "Todo",
-        "Tags": tags,
-        "Priority": priority,
+        "Tags": parsed["tags"] or [],
+        "Priority": parsed["priority"] or "",
         "Timestamp": util.parse_timestamp_to_ms(timestamp),
     }
 
-    # Initialize Feishu bot and create record
+    # Create record in Feishu
     try:
-        bot = FeishuTable(
-            global_config.remote.feishu_api_endpoint,
-            global_config.remote.feishu_bot_app_id,
-            global_config.remote.feishu_bot_app_secret,
-            global_config.remote.feishu_table_app_token,
-            global_config.remote.feishu_table_id,
-        )
-
-        record = {"fields": fields}
-        if bot.batch_create([record]):
+        if _create_feishu_record(global_config, fields):
             click.echo(f"✓ Added to Feishu: {content}")
             return 0
         else:
