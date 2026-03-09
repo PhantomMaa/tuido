@@ -2,6 +2,8 @@
 
 A TUI (Terminal User Interface) Kanban board for TODO.md files.
 
+[中文 README](README.zh-CN.md)
+
 ## Features
 
 - 📋 Parse TODO.md files with simple list syntax
