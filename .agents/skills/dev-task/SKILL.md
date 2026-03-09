@@ -18,15 +18,13 @@ description: 领取开发任务并按要求完成开发的技能。在 github �
 - 添加任务 (tuido add)。添加新任务到 TODO.md 的第一个栏目（通常是 Todo）。
   **语法:**
   ```bash
-  tuido add "任务描述 #标签 !优先级" # 添加任务到本地 TODO.md
-  tuido add --remote "任务描述" # 添加任务到远程飞书多维表格
+  tuido add "任务描述 #标签 !优先级"
   ```
 
 - 列出任务 (tuido list)。列出 TODO.md 中的所有任务，支持按状态、标签、优先级筛选。
   **语法:**
   ```bash
-  tuido list --status "Todo" --tag "bugfix" --priority "P1" # 列出本地 TODO.md 中状态为 Todo，标签为 bugfix，优先级为 P1 的任务
-  tuido list --remote # 列出远程飞书多维表格中的所有任务
+  tuido list --status "Todo" --tag "bugfix" --priority "P1"
   ```
 
 ### `gh`
