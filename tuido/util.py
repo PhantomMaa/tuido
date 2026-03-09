@@ -5,8 +5,8 @@ from typing import Any
 
 def find_todo_file(path: Path) -> Path:
     """Find TODO.md file in the given path."""
-    if path.is_dir():
-        # Look for TODO.md or TODO.md in the directory
+    if path.is_dir() or (not path.exists() and not path.suffix):
+        # If path is a directory, or doesn't exist and has no suffix (likely a directory)
         for filename in ["TODO.md", "TODO.MD", "todo.md", "Todo.md"]:
             todo_file = path / filename
             if todo_file.exists():
