@@ -46,8 +46,8 @@ tuido list --tag feature
 tuido list --priority P1
 
 # Add a new task
-tuido add "Fix bug #bug !P0"
-tuido add "Update documentation #docs" --path /path/to/project
+tuido add 'Fix bug #bug !P0'
+tuido add 'Update documentation #docs' --path /path/to/project
 
 # Pick the top task and move to next column
 tuido pick

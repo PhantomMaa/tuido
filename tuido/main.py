@@ -132,25 +132,23 @@ def pull_command(path: Path) -> int:
 @click.option(
     "--path",
     "target_path",
-    required=True,
+    required=False,
+    default=".",
     type=click.Path(exists=False, path_type=Path),
     help="Path to TODO.md or directory",
 )
 def add_command(content: str, target_path: Path) -> int:
-    """Add a new task to TODO.md.
+    """Add a new task to TODO.md or Feishu.
+
+    If TODO.md exists locally, the task will be added to it.
+    If not, and Feishu is configured, the task will be added directly to Feishu table.
 
     The content can include tags (#tag) and priority (!P0-4).
     Examples:
-        tuido add "Fix login bug #bug !P0"
-        tuido add "Update documentation #docs"
+        tuido add 'Fix login bug #bug !P0'
+        tuido add 'Update documentation #docs'
     """
     todo_file = util.find_todo_file(target_path.resolve())
-
-    # If file doesn't exist, create it first
-    if not todo_file.exists():
-        click.echo(f"TODO.md not found at {todo_file}", err=True)
-        click.echo("Use 'tuido create' to create a sample file first.", err=True)
-        return 1
 
     return run_add_command(todo_file, content=content)
 
@@ -160,8 +158,7 @@ def add_command(content: str, target_path: Path) -> int:
 def create_command(path: Path) -> int:
     """Create a sample TODO.md if it doesn't exist."""
     todo_file = util.find_todo_file(path.resolve())
-    exit_code = run_create_command(todo_file)
-    raise click.Exit(exit_code)
+    return run_create_command(todo_file)
 
 
 def main():

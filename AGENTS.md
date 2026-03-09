@@ -317,7 +317,7 @@ pip install -e .
 tuido tui                       # 打开看板（--path 默认为 .）
 tuido tui --remote              # 打开全局视图（从飞书读取）
 tuido create                    # 创建示例文件
-tuido add "Fix bug #bug !P0"    # 添加任务
+tuido add 'Fix bug #bug !P0'    # 添加任务
 tuido pick                      # 选取首任务并移到下一栏
 tuido list                      # 列出所有任务
 tuido list --remote             # 列出飞书上的任务
