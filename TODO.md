@@ -10,6 +10,7 @@ remote:
 # TUIDO
 
 ## Todo
+- `tuido add` 如果当前目录没有 TODO.md，则添加到 remote ~2026-03-09T10:53
 
 ## Active
 
