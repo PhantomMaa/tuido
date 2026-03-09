@@ -160,7 +160,8 @@ def add_command(content: str, target_path: Path) -> int:
 def create_command(path: Path) -> int:
     """Create a sample TODO.md if it doesn't exist."""
     todo_file = util.find_todo_file(path.resolve())
-    return run_create_command(todo_file)
+    exit_code = run_create_command(todo_file)
+    raise click.Exit(exit_code)
 
 
 def main():
