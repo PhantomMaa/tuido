@@ -3,8 +3,10 @@
 from pathlib import Path
 import click
 from tuido.config import load_global_config
+from tuido.parser import parse_task_content
 from tuido.models import GlobalConfig
 from datetime import datetime
+from tuido import util
 
 
 def _print_feishu_config_error() -> None:
@@ -57,10 +59,6 @@ def run_add_command_remote(content: str) -> int:
     Returns:
         Exit code (0 for success, 1 for error)
     """
-    from datetime import datetime
-
-    from tuido import util
-    from tuido.parser import parse_task_content
 
     # Check Feishu config
     global_config = load_global_config()
@@ -73,12 +71,11 @@ def run_add_command_remote(content: str) -> int:
 
     # Get current timestamp and project
     timestamp = datetime.now().strftime("%Y-%m-%dT%H:%M")
-    project = Path.cwd().name
 
     # Prepare record fields
     fields = {
         "Task": parsed["title"] or content,
-        "Project": project,
+        "Project": None,
         "Status": "Todo",
         "Tags": parsed["tags"] or [],
         "Priority": parsed["priority"] or "",
