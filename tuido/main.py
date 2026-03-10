@@ -15,35 +15,39 @@ from tuido.parser import parse_todo_file
 from tuido import util
 
 
-path_option = click.option(
+@click.group(invoke_without_command=False)
+@click.version_option(version="0.1.0", prog_name="tuido")
+@click.option(
     "--path",
     required=False,
     default=".",
     type=click.Path(exists=False, path_type=Path),
     help="Path to TODO.md or directory",
 )
-
-
-@click.group()
-@click.version_option(version="0.1.0", prog_name="tuido")
-def cli():
-    """A TUI Kanban board for TODO.md file."""
-
-
-@cli.command(name="tui")
-@path_option
 @click.option(
     "--remote",
     is_flag=True,
-    help="Open remote global view from Feishu table instead of local TODO.md",
+    help="Use remote Feishu table (only for tui/list/push/add commands)",
 )
-def tui_command(path: Path, remote: bool) -> int:
+@click.pass_context
+def cli(ctx: click.Context, path: Path, remote: bool):
+    """A TUI Kanban board for TODO.md file."""
+    # Store global options in context for subcommands
+    ctx.ensure_object(dict)
+    ctx.obj["path"] = path
+    ctx.obj["remote"] = remote
+
+
+@cli.command(name="tui")
+@click.pass_context
+def tui_command(ctx: click.Context) -> int:
     """Open TUI Kanban board."""
+    path = ctx.obj["path"]
+    remote = ctx.obj["remote"]
     return run_tui_command(path, remote)
 
 
 @cli.command(name="list")
-@path_option
 @click.option(
     "--status",
     type=str,
@@ -59,13 +63,12 @@ def tui_command(path: Path, remote: bool) -> int:
     type=str,
     help="Filter tasks by priority (e.g., 'P0', 'P1')",
 )
-@click.option(
-    "--remote",
-    is_flag=True,
-    help="List tasks from remote Feishu table instead of local TODO.md",
-)
-def list_command(path: Path, status: str, tag: str, priority: str, remote: bool) -> int:
+@click.pass_context
+def list_command(ctx: click.Context, status: str, tag: str, priority: str) -> int:
     """List tasks from TODO.md."""
+    path = ctx.obj["path"]
+    remote = ctx.obj["remote"]
+    
     if remote:
         # List tasks from remote
         return run_list_command_remote(status=status, tag=tag, priority=priority)
@@ -82,14 +85,12 @@ def list_command(path: Path, status: str, tag: str, priority: str, remote: bool)
 
 
 @cli.command(name="push")
-@path_option
-@click.option(
-    "--remote",
-    is_flag=True,
-    help="Push all tasks from global view (/tmp/TODO_global.md) to Feishu",
-)
-def push_command(path: Path, remote: bool) -> int:
+@click.pass_context
+def push_command(ctx: click.Context) -> int:
     """Push tasks to Feishu table (requires remote config in TODO.md)."""
+    path = ctx.obj["path"]
+    remote = ctx.obj["remote"]
+    
     if remote:
         # Push from global view
         return run_push_command_remote()
@@ -105,9 +106,25 @@ def push_command(path: Path, remote: bool) -> int:
 
 
 @cli.command(name="pull")
-@path_option
-def pull_command(path: Path) -> int:
+@click.pass_context
+def pull_command(ctx: click.Context) -> int:
     """Pull tasks from Feishu table (requires remote config in TODO.md)."""
+    path = ctx.obj["path"]
+    remote = ctx.obj["remote"]
+    
+    if remote:
+        click.echo("Error: --remote is not supported for pull command", err=True)
+        ctx.exit(1)
+
+    todo_file = util.find_todo_file(path.resolve())
+    if not todo_file.exists():
+        click.echo(f"Error: TODO.md not found at {todo_file}", err=True)
+        click.echo("Use 'tuido create' to create a sample file.", err=True)
+        return 1
+
+    board = parse_todo_file(todo_file)
+    return run_pull_command(board, todo_file)
+
     todo_file = util.find_todo_file(path.resolve())
     if not todo_file.exists():
         click.echo(f"Error: TODO.md not found at {todo_file}", err=True)
@@ -119,14 +136,9 @@ def pull_command(path: Path) -> int:
 
 
 @cli.command(name="add")
-@path_option
 @click.argument("content", required=True)
-@click.option(
-    "--remote",
-    is_flag=True,
-    help="Add task to remote Feishu table instead of local TODO.md",
-)
-def add_command(path: Path, content: str, remote: bool) -> int:
+@click.pass_context
+def add_command(ctx: click.Context, content: str) -> int:
     """Add a new task to TODO.md or Feishu.
 
     If TODO.md exists locally, the task will be added to it.
@@ -138,8 +150,11 @@ def add_command(path: Path, content: str, remote: bool) -> int:
         tuido add 'Update documentation #docs'
         tuido add 'New feature #enhancement !P1' --remote
     """
+    path = ctx.obj["path"]
+    remote = ctx.obj["remote"]
+    
     if remote:
-        # List tasks from remote
+        # Add task to remote
         return run_add_command_remote(content)
 
     todo_file = util.find_todo_file(path.resolve())
@@ -152,11 +167,19 @@ def add_command(path: Path, content: str, remote: bool) -> int:
 
 
 @cli.command(name="create")
-@path_option
-def create_command(path: Path) -> int:
+@click.pass_context
+def create_command(ctx: click.Context) -> int:
     """Create a sample TODO.md if it doesn't exist."""
+    path = ctx.obj["path"]
+    remote = ctx.obj["remote"]
+    
+    if remote:
+        click.echo("Error: --remote is not supported for create command", err=True)
+        ctx.exit(1)
+    
     todo_file = util.find_todo_file(path.resolve())
-    return run_create_command(todo_file)
+    result = run_create_command(todo_file)
+    return result if result is not None else 0
 
 
 def main():

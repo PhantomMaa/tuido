@@ -33,11 +33,9 @@ pip install -e .
 ```bash
 # Open TUI Kanban board for TODO.md in current directory (default)
 tuido tui
-tuido tui --path .
 
 # Create a sample TODO.md file
 tuido create
-tuido create --path /path/to/project
 
 # List tasks (optionally filtered)
 tuido list
@@ -47,24 +45,27 @@ tuido list --priority P1
 
 # Add a new task
 tuido add 'Fix bug #bug !P0'
-tuido add 'Update documentation #docs' --path /path/to/project
 
 # Push tasks to Feishu table
 tuido push
-tuido push --path /path/to/project
 
 # Pull tasks from Feishu table
 tuido pull
-tuido pull --path /path/to/project
 
-# Open remote global view from Feishu table
-tuido tui --remote
-
-# List tasks from remote Feishu table
-tuido list --remote
+# Use global options (--path and --remote)
+tuido --path /path/to/project tui
+tuido --path /path/to/project list --status Active
+tuido --remote tui           # Open remote global view
+tuido --remote list          # List tasks from remote
+tuido --remote add 'Task'    # Add task to remote
+tuido --path /path/to/project --remote push
 ```
 
-**Note:** `--path` is optional for most commands and defaults to the current directory (`.`).
+**Global Options:**
+- `--path PATH` - Path to TODO.md or directory (default: current directory)
+- `--remote` - Use remote Feishu table (only for `tui`, `list`, `push`, `add` commands)
+
+**Note:** `--path` and `--remote` are global options that must be placed before the command.
 
 ## Keyboard Shortcuts
 

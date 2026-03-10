@@ -31,11 +31,9 @@ pip install -e .
 ```bash
 # 打开当前目录 TODO.md 的 TUI 看板（默认）
 tuido tui
-tuido tui --path .
 
 # 创建示例 TODO.md 文件
 tuido create
-tuido create --path /path/to/project
 
 # 列出任务（可选过滤）
 tuido list
@@ -45,24 +43,27 @@ tuido list --priority P1
 
 # 添加新任务
 tuido add '修复 bug #bug !P0'
-tuido add '更新文档 #docs' --path /path/to/project
 
 # 推送任务到飞书表格
 tuido push
-tuidu push --path /path/to/project
 
 # 从飞书表格拉取任务
 tuido pull
-tuido pull --path /path/to/project
 
-# 从飞书表格打开远程全局视图
-tuido tui --remote
-
-# 从远程飞书表格列出任务
-tuido list --remote
+# 使用全局选项（--path 和 --remote）
+tuido --path /path/to/project tui
+tuido --path /path/to/project list --status Active
+tuido --remote tui           # 打开远程全局视图
+tuido --remote list          # 列出远程任务
+tuido --remote add '任务'    # 添加任务到远程
+tuido --path /path/to/project --remote push
 ```
 
-**注意：** 大多数命令的 `--path` 参数是可选的，默认为当前目录（`.`）。
+**全局选项：**
+- `--path PATH` - TODO.md 文件或目录路径（默认：当前目录）
+- `--remote` - 使用远程飞书表格（仅支持 `tui`、`list`、`push`、`add` 命令）
+
+**注意：** `--path` 和 `--remote` 是全局选项，必须放在子命令之前。
 
 ## 键盘快捷键
 
