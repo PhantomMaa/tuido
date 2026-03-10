@@ -66,13 +66,12 @@ def tui_command(ctx: click.Context) -> int:
 @click.pass_context
 def list_command(ctx: click.Context, status: str, tag: str, priority: str) -> int:
     """List tasks from TODO.md."""
-    path = ctx.obj["path"]
     remote = ctx.obj["remote"]
-    
     if remote:
         # List tasks from remote
         return run_list_command_remote(status=status, tag=tag, priority=priority)
 
+    path = ctx.obj["path"]
     todo_file = util.find_todo_file(path.resolve())
     if not todo_file.exists():
         click.echo(f"Error: TODO.md not found at {todo_file}", err=True)
@@ -88,13 +87,12 @@ def list_command(ctx: click.Context, status: str, tag: str, priority: str) -> in
 @click.pass_context
 def push_command(ctx: click.Context) -> int:
     """Push tasks to Feishu table (requires remote config in TODO.md)."""
-    path = ctx.obj["path"]
     remote = ctx.obj["remote"]
-    
     if remote:
         # Push from global view
         return run_push_command_remote()
 
+    path = ctx.obj["path"]
     todo_file = util.find_todo_file(path.resolve())
     if not todo_file.exists():
         click.echo(f"Error: TODO.md not found at {todo_file}", err=True)
@@ -109,13 +107,12 @@ def push_command(ctx: click.Context) -> int:
 @click.pass_context
 def pull_command(ctx: click.Context) -> int:
     """Pull tasks from Feishu table (requires remote config in TODO.md)."""
-    path = ctx.obj["path"]
     remote = ctx.obj["remote"]
-    
     if remote:
         click.echo("Error: --remote is not supported for pull command", err=True)
         ctx.exit(1)
 
+    path = ctx.obj["path"]
     todo_file = util.find_todo_file(path.resolve())
     if not todo_file.exists():
         click.echo(f"Error: TODO.md not found at {todo_file}", err=True)
@@ -150,13 +147,12 @@ def add_command(ctx: click.Context, content: str) -> int:
         tuido add 'Update documentation #docs'
         tuido add 'New feature #enhancement !P1' --remote
     """
-    path = ctx.obj["path"]
     remote = ctx.obj["remote"]
-    
     if remote:
         # Add task to remote
         return run_add_command_remote(content)
 
+    path = ctx.obj["path"]
     todo_file = util.find_todo_file(path.resolve())
     if not todo_file.exists():
         click.echo(f"Error: TODO.md not found at {todo_file}", err=True)
