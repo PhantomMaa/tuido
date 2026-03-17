@@ -604,9 +604,17 @@ class AddTaskScreen(ModalScreen):
             self.dismiss(None)
 
     def on_key(self, event) -> None:
-        """Handle escape key to cancel."""
+        """Handle escape key to cancel, and fix space key in VSCode terminal."""
         if event.key == "escape":
             self.dismiss(None)
+        elif event.key == "space":
+            # VSCode integrated terminal intercepts space before Input receives it.
+            # Manually insert a space character into the input widget.
+            input_widget = self.query_one("#task_input", Input)
+            pos = input_widget.cursor_position
+            input_widget.value = input_widget.value[:pos] + " " + input_widget.value[pos:]
+            input_widget.cursor_position = pos + 1
+            event.stop()
 
 
 class TuidoApp(App):

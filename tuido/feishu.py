@@ -171,6 +171,7 @@ class FeishuTable:
         if page_token:
             params["page_token"] = page_token
 
+        # 当 filter 参数不为空时，请求视为对数据表中的全部数据做条件过滤，指定的 view_id 会被忽略
         filter = (
             {
                 "conditions": [
@@ -245,6 +246,7 @@ class FeishuTable:
 
         Args:
             limit: 可选的记录处理限制数量
+            condition: 可选的条件，用于过滤记录
         """
         logger.info("开始获取飞书多维表格数据...")
 
