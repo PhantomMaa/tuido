@@ -11,12 +11,10 @@ A TUI (Terminal User Interface) Kanban board for TODO.md files.
 - 🎨 Multiple themes (Dracula, Nord, Monokai, Solarized, etc.)
 - ⌨️ Vim-style keybindings (h/j/k/l)
 - ↔️ Move tasks between columns with Shift+Arrow keys
-- 🔃 Reorder tasks within column (including subtasks)
 - 🏷️ Support for tags (#tag), priority (!P0/!P1/!P2/!P3/!P4), timestamp (~YYYY-MM-DDTHH:MM)
 - 💾 Save changes back to TODO.md
 - 🌏 **Global view** - View all projects' tasks from Feishu table
 - 🔄 **Bi-directional sync** - Push to and pull from Feishu table
-- 📁 **Hierarchical tasks** - Support for subtasks with indentation
 
 ## Installation
 
@@ -106,8 +104,6 @@ theme: dracula
 
 ## Active
 - Currently working on ~2026-02-28T14:00
-  - Subtask 1 #backend
-  - Subtask 2 #frontend
 
 ## Done
 - Completed task ~2026-02-27T16:30
@@ -148,23 +144,6 @@ Examples:
 ```
 
 **Note:** The timestamp is automatically updated when you move or reorder tasks in the TUI, and is synced with Feishu's `Timestamp` field.
-
-### Subtasks (Hierarchical Tasks)
-
-Use 2-space indentation to create subtasks:
-
-```markdown
-## Todo
-- Parent task !P1
-  - Subtask 1
-  - Subtask 2
-    - Grandchild task
-```
-
-**Rules:**
-- 2 spaces = 1 level of indentation
-- Subtasks move with their parent when moving between columns
-- Subtasks can be reordered independently within the same parent
 
 ## Configuration
 
