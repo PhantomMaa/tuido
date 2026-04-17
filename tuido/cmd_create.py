@@ -12,8 +12,6 @@ theme: textual-dark
 ## Todo
 - Implement user authentication #feature !P1
 - Write unit tests #testing
-  - backend tests #testing
-  - frontend tests #testing
 - Update documentation #docs
 
 ## Active
